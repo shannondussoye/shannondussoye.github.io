@@ -1,15 +1,25 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset='utf-8'/>
-    <title>Show polygon information on click</title>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <meta charset='utf-8' />
+    <title>Australia SA4 Population Map</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.js'></script>
-    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.css' rel='stylesheet'/>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.css' rel='stylesheet' />
     <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --text-main: #1a202c;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
         body {
             margin: 0;
             padding: 0;
+            font-family: var(--font-family);
+            background: #f7fafc;
         }
 
         #map {
@@ -19,148 +29,207 @@
             width: 100%;
         }
 
-        .mapboxgl-popup {
-            max-width: 400px;
-            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        .map-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 200px;
+            z-index: 1;
         }
 
-        #legend {
-            padding: 10px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
-            line-height: 18px;
-            height: 120px;
-            margin-bottom: 40px;
-            width: 180px;
+        #legend h4 {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #4a5568;
+            font-weight: 500;
         }
 
         .legend-key {
             display: inline-block;
-            border-radius: 20%;
-            width: 10px;
-            height: 10px;
-            margin-right: 5px;
-        }
-
-        .map-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            background: rgba(255, 255, 255, 0.8);
-            margin-left: 20px;
-            font-family: Arial, sans-serif;
-            overflow: auto;
-            border-radius: 3px;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
         }
 
         .mapboxgl-popup {
-            max-width: 400px;
-            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            z-index: 2;
+        }
+
+        .mapboxgl-popup-tip {
+            display: none;
+        }
+
+        .mapboxgl-popup-content {
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            color: var(--text-main);
+            font-family: var(--font-family);
+        }
+
+        .popup-title {
+            font-weight: 800;
+            font-size: 15px;
+            color: #1a202c;
+            margin-bottom: 2px;
+            display: block;
+            letter-spacing: -0.01em;
+        }
+
+        .popup-value-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #718096;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .popup-value {
+            font-size: 13px;
+            color: #4a5568;
+            font-weight: 500;
         }
     </style>
 </head>
+
 <body>
-<div id='map'></div>
-<div class='map-overlay' id='legend'></div>
-<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
-<script>
 
-    var COLORS = ['#91d7ff', '#146ec8', '#0051a7', '#ff9696', '#d7160a', '#b80000'],
-        BREAKS = [1, 2, 3, 4, 5, 6],
-        FILTERUSE;
-    //    var scale = d3.scaleLinear().domain([0, 600000]).range([0, 5]);
+    <div id='map'></div>
+    <div class='map-overlay' id='legend'>
+        <h4>Population Size</h4>
+    </div>
 
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoibnl0Z3JhcGhpY3MiLCJhIjoiY2o5YTl2N29jMTBsZDM0cDl5NW50MXo5aCJ9.XWVKJju1tz6kSBXkeWJzwg';
 
-    mapboxgl.accessToken = 'pk.eyJ1Ijoibnl0Z3JhcGhpY3MiLCJhIjoiY2o5YTl2N29jMTBsZDM0cDl5NW50MXo5aCJ9.XWVKJju1tz6kSBXkeWJzwg';
-    var map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/nytgraphics/cj9ospgyg4lw42rnsd7k0vmxt',
-        center: [132, -28],
-        zoom: 3.5
-    });
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/nytgraphics/cj9ospgyg4lw42rnsd7k0vmxt',
+            center: [134.5, -28.5],
+            zoom: 3.2
+        });
 
-    var data = "../data/sa4population.geojson";
-    map.on('load', function () {
-        // Add a layer showing the state polygons.
-        map.addLayer({
-            'id': 'sa4-layer',
-            'type': 'fill',
-            'source': {
-                'type': 'geojson',
-                'data': data
-            },
-            'paint': {
-                'fill-outline-color': '#FFF',
-                'fill-color': {
-                    property: 'Tot_P_P',
-                    stops: [[50000, '#91d7ff'],
-                        [100000, '#146ec8'],
-                        [150000, '#0051a7'],
-                        [200000, '#ff9696'],
-                        [400000, '#d7160a'],
-                        [600000, '#b80000']]
+        var data = "../data/sa4population.geojson";
+
+        map.on('load', function () {
+            map.addLayer({
+                'id': 'sa4-layer',
+                'type': 'fill',
+                'source': {
+                    'type': 'geojson',
+                    'data': data
                 },
-                'fill-opacity': 0.9
+                'paint': {
+                    'fill-outline-color': 'rgba(255,255,255,0.4)',
+                    'fill-color': {
+                        property: 'Tot_P_P',
+                        stops: [
+                            [50000, '#91d7ff'],
+                            [100000, '#146ec8'],
+                            [150000, '#0051a7'],
+                            [200000, '#ff9696'],
+                            [400000, '#d7160a'],
+                            [600000, '#b80000']
+                        ]
+                    },
+                    'fill-opacity': 0.85
+                }
+            });
+
+            map.addLayer({
+                'id': 'sa4-hover',
+                'type': 'fill',
+                'source': {
+                    'type': 'geojson',
+                    'data': data
+                },
+                'layout': {},
+                'paint': {
+                    'fill-outline-color': '#2a4365',
+                    'fill-color': '#2a4365',
+                    'fill-opacity': 0.2
+                },
+                "filter": ["==", "SA4_NAME", ""]
+            });
+
+            var popup = new mapboxgl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                offset: 15
+            });
+
+            map.on('mousemove', 'sa4-layer', function (e) {
+                map.getCanvas().style.cursor = 'pointer';
+
+                var feature = e.features[0];
+                map.setFilter("sa4-hover", ["==", "SA4_NAME", feature.properties.SA4_NAME]);
+
+                popup.setLngLat(e.lngLat)
+                    .setHTML('<span class="popup-title">' + feature.properties.SA4_NAME + '</span>' +
+                        '<div style="display: flex; align-items: baseline;">' +
+                        '<span class="popup-value-label">Population</span>' +
+                        '<span class="popup-value">' + feature.properties.Tot_P_P.toLocaleString() + '</span>' +
+                        '</div>')
+                    .addTo(map);
+            });
+
+            map.on('mouseleave', 'sa4-layer', function () {
+                map.getCanvas().style.cursor = '';
+                popup.remove();
+                map.setFilter("sa4-hover", ["==", "SA4_NAME", ""]);
+            });
+
+            var layers = ['0 - 50k', '50k - 100k', '100k - 150k', '150k - 200k', '200k - 400k', '400k+'];
+            var colors = ['#91d7ff', '#146ec8', '#0051a7', '#ff9696', '#d7160a', '#b80000'];
+            var legendEl = document.getElementById('legend');
+
+            for (var i = 0; i < layers.length; i++) {
+                var item = document.createElement('div');
+                item.className = 'legend-row';
+
+                var key = document.createElement('span');
+                key.className = 'legend-key';
+                key.style.backgroundColor = colors[i];
+
+                var value = document.createElement('span');
+                value.innerHTML = layers[i];
+
+                item.appendChild(key);
+                item.appendChild(value);
+                legendEl.appendChild(item);
             }
         });
 
-        map.addLayer({
-            'id': 'sa4-hover',
-            'type': 'fill',
-            'source': 'sa4-layer',
-            'layout': {},
-            'paint': {
-                'fill-outline-color': 'black',
-                'fill-color': 'black',
-                'fill-opacity': 0.4
-            },
-            "filter": ["==", "SA4_NAME", ""]
-
-        });
-
-        // Create a popup, but don't add it to the map yet.
-        var popup = new mapboxgl.Popup({
-            closeButton: false,
-            closeOnClick: false
-        });
-
-        map.on('mousemove', 'sa4-layer', function (e) {
-            // Change the cursor style as a UI indicator.
-            map.getCanvas().style.cursor = 'pointer';
-
-            // Populate the popup aand set its coordinates
-            // based on the feature found.
-            map.setFilter("sa4-hover", ["==", "SA4_NAME", e.features[0].properties.SA4_NAME]);
-            popup.setLngLat(e.lngLat)
-                .setHTML(e.features[0].properties.SA4_NAME + "<br>" + "Population Size : " + (e.features[0].properties.Tot_P_P).toLocaleString())
-                .addTo(map);
-
-        });
-        map.on('mouseleave', 'sa4-layer', function () {
-            map.getCanvas().style.cursor = '';
-            popup.remove();
-            map.setFilter("sa4-hover", ["==", "SA4_NAME", ""]);
-        });
-
-        var layers = ['0 - 50,000', '50,000 - 100,000', '100,000 - 150,000', '150,000 - 200,000', '200,000 - 400,000', '400,000+'];
-        var colors = ['#91d7ff', '#146ec8', '#0051a7', '#ff9696', '#d7160a', '#b80000'];
-        for (i = 0; i < layers.length; i++) {
-            var layer = layers[i];
-            var color = colors[i];
-            var item = document.createElement('div');
-            var key = document.createElement('span');
-            key.className = 'legend-key';
-            key.style.backgroundColor = color;
-
-            var value = document.createElement('span');
-            value.innerHTML = layer;
-            item.appendChild(key);
-            item.appendChild(value);
-            legend.appendChild(item);
-        }
-
-
-    });
-</script>
+        // Add navigation controls
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    </script>
 
 </body>
+
 </html>

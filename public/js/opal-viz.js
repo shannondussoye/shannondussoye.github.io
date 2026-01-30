@@ -1,113 +1,114 @@
-var format = d3.timeParse("%Y%m%d %H:%M");
-d3.csv("../data/d3-data.csv", function (err, data) {
-    data.forEach(function (d) {
-        d.size = +d.size;
-//            d.datetime = format((d.date + " " + d.time));
-        d.lat = +d.lat;
-        d.lon = +d.lon;
-        d.coordinates = [d.lon, d.lat].join(",");
-    });
-    // console.log(data)
+mapboxgl.accessToken = 'pk.eyJ1Ijoic2hhbm5vbmR1c3NveWUiLCJhIjoiY2oxbmhuM2F6MDBqYjMybWhkbTd6MjdxbyJ9.eJ3subj-fGRIz5ujR0xz8A';
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v11',
+    center: [151.05, -33.86],
+    zoom: 9.8,
+    pitch: 15
+});
 
-    mapboxgl.accessToken = 'pk.eyJ1Ijoic2hpbWl6dSIsImEiOiI0cl85c2pNIn0.RefZMaOzNn-IistVe-Zcnw'
-    var map = new mapboxgl.Map({
-        container: 'map', // container id
-        style: 'mapbox://styles/mapbox/dark-v8',
-        center: [151, -33.85],
-        zoom: 8,
-    });
-    map.addControl(new mapboxgl.Navigation());
-    mapDraw(data, map);
+const parseTime = d3.timeParse("%Y%m%d %H:%M");
+const formatTime = d3.timeFormat("%H:%M");
+const formatFullTime = d3.timeFormat("%a, %H:%M");
 
-})//end of d3.csv
+d3.csv("../data/d3-data.csv").then(rawData => {
+    // Process data: filter out zero counts and group by time
+    const data = rawData.map(d => ({
+        loc: d.loc,
+        lat: +d.lat,
+        lon: +d.lon,
+        datetime: d.datetime,
+        count: +d.count
+    }));
 
-function mapDraw(data, map) {//Draw map
+    const dates = Array.from(new Set(data.map(d => d.datetime))).sort();
+    const stationMap = d3.group(data, d => d.datetime);
 
-    map.on("load", function () {
-        var container = map.getCanvasContainer();
-        var svg = d3.select(container).append("svg");
-        var circles = svg.selectAll("circle");
+    map.on('load', () => {
+        const container = map.getCanvasContainer();
+        const svg = d3.select(container).append("svg");
+        const defs = svg.append("defs");
 
-        //get distinct dates for loop and filter
-        var dates = d3.map(data, function (d) {
-            return d.datetime;
-        }).keys();
+        // Glow filter
+        const filter = defs.append("filter")
+            .attr("id", "glow")
+            .attr("x", "-50%")
+            .attr("y", "-50%")
+            .attr("width", "200%")
+            .attr("height", "200%");
 
-        //sort dates
-        dates.sort(function(a,b){
-            return new Date(a) - new Date(b);
-        });
+        filter.append("feGaussianBlur")
+            .attr("stdDeviation", "3.5")
+            .attr("result", "coloredBlur");
 
-        //get distinct coordinates
-        var dcoord = d3.map(data, function (d) {
-            return d.coordinates;
-        }).keys();
+        const feMerge = filter.append("feMerge");
+        feMerge.append("feMergeNode").attr("in", "coloredBlur");
+        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-        //Need to add all locations
-        svg.selectAll("circle")
-            .data(dcoord)
-            .enter()
-            .append("circle")
-            .attr("cx", function (d) {
-                return project(d).x;
-            })
-            .attr("cy", function (d) {
-                return project(d).y;
-            })
-            .attr("r", 0)
-            .attr("fill", "none")
-            .attr("stroke", "#0082a3");
+        const colorScale = d3.scaleSequential()
+            .domain([0, 500])
+            .interpolator(d3.interpolateRgbBasis(["#6366f1", "#0ea5e9", "#22d3ee", "#ffffff"]));
 
-        function transition() {
 
-            var newData = data.filter(function (d) {
-                return d.datetime == dates[counter]
-            });
-
-            svg.selectAll("circle")
-                .data(newData)
-                .transition()
-                .duration(1000)
-                .attr("r", function (d) {
-                    return Math.sqrt(d.count);
-                })
-                .transition()
-                .delay(1000)
-                .attr("r", 0);
-
-            var tipSVG = d3.select("#time")
-                .data(newData)
-                .text(function (d) {
-                    return d.datetime
-                });
-            counter += 1;
-            if (counter == dates.length) {
-                timer.stop()
-            }
-        }
-
-        var counter = 0;
-        var timer = d3.interval(transition, 1500);
-
-        map.on("viewreset", update);
-        map.on("move", update);
-        update();
-
-        //Functions
-        function project(d) {//return lonlat
-            var coord = d.split(",");
-            return map.project(new mapboxgl.LngLat(+coord[0], +coord[1]));
-        }
+        let index = 0;
 
         function update() {
-            svg.selectAll("circle")
-                .data(dcoord)
-                .attr("cx", function (d) {
-                    return project(d).x;
-                })
-                .attr("cy", function (d) {
-                    return project(d).y;
-                })
+            const currentTime = dates[index];
+            if (!currentTime) return;
+
+            const intervalData = stationMap.get(currentTime).filter(d => d.count > 0);
+
+            // Update UI
+            const dateObj = parseTime(currentTime);
+            d3.select("#time-display").text(formatTime(dateObj));
+
+            const totalTaps = d3.sum(intervalData, d => d.count);
+            d3.select("#total-taps").text(totalTaps.toLocaleString());
+
+            if (intervalData.length > 0) {
+                const peak = intervalData.reduce((prev, current) => (prev.count > current.count) ? prev : current);
+                d3.select("#peak-station").text(peak.loc.replace(" Station", ""));
+            }
+
+            // Update Map Elements
+            const circles = svg.selectAll(".station-pulse")
+                .data(intervalData, d => d.loc);
+
+            circles.exit()
+                .transition().duration(500)
+                .attr("r", 0)
+                .attr("opacity", 0)
+                .remove();
+
+            const enter = circles.enter()
+                .append("circle")
+                .attr("class", "station-pulse")
+                .attr("filter", "url(#glow)")
+                .attr("opacity", 0)
+                .attr("r", 0);
+
+            enter.merge(circles)
+                .attr("cx", d => map.project([d.lon, d.lat]).x)
+                .attr("cy", d => map.project([d.lon, d.lat]).y)
+                .transition().duration(1000)
+                .attr("r", 8)
+                .attr("fill", d => colorScale(d.count))
+                .attr("opacity", 0.85);
+
+            index = (index + 1) % dates.length;
+            setTimeout(update, 1000);
         }
-    })
-}//map draw function
+
+        function reposition() {
+            svg.selectAll(".station-pulse")
+                .attr("cx", d => map.project([d.lon, d.lat]).x)
+                .attr("cy", d => map.project([d.lon, d.lat]).y);
+        }
+
+        map.on("viewreset", reposition);
+        map.on("move", reposition);
+        map.on("moveend", reposition);
+
+        update();
+    });
+});

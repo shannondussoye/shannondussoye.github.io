@@ -96,7 +96,11 @@ data["count"][is.na(data["count"])] <- 0
 ```
 
 ### The Final Visualization
-With a complete dataset, I created an animated visualization showing commuting patterns over an entire week. You can see the result [here](http://shannondussoye.github.io/pages/Opal-Card.html).
+With a complete dataset, I created an animated visualization showing commuting patterns over an entire week. You can see the result [here](/pages/Opal-Card.html).
+
+<div class="map-container" style="position: relative; width: 100%; height: 600px; margin: 2rem 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <iframe src="/pages/Opal-Card.html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" title="Interactive Opal Card Travel Visualization"></iframe>
+</div>
 
 ![Opal-Vis](/img/opal-viz.gif "Sydney Opal Travel Visualization")
 

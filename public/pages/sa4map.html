@@ -4,27 +4,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interactive map of Australian Statistical Area Level 4 (SA4) regions">
-    <title>Australian SA4 Map - Statistical Areas Level 4</title>
-    
-    <!-- Updated dependencies -->
+    <title>Interactive Australian SA4 Map</title>
+
     <script type="text/javascript" src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://d3js.org/topojson.v3.min.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-    
+
     <style>
-        * {
-            box-sizing: border-box;
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1a202c;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --accent: #4CAF50;
         }
-        
+
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            font-family: var(--font-family);
+            background: #1a1a1a;
         }
 
         #map {
@@ -34,71 +34,84 @@
             width: 100%;
         }
 
-        #sidebar {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            width: 280px;
-            max-height: calc(100vh - 30px);
-            overflow-y: auto;
-            background: rgba(26, 26, 26, 0.95);
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        .mapboxgl-popup-tip {
+            display: none;
         }
 
-        #sidebar h3 {
-            margin: 0 0 15px 0;
-            font-size: 18px;
-            color: #ffffff;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 8px;
+        .mapboxgl-popup-content {
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
         }
 
-        .info-item {
-            margin: 10px 0;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            font-size: 14px;
+        .popup-title {
+            font-weight: 800;
+            font-size: 15px;
+            color: #1a202c;
+            margin-bottom: 2px;
+            display: block;
+            letter-spacing: -0.01em;
         }
 
-        .info-label {
-            font-weight: bold;
-            color: #4CAF50;
-        }
-
-        #legend {
-            margin-top: 20px;
-            padding: 15px 0;
-            border-top: 1px solid #444;
-        }
-
-        .legend-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #ffffff;
-        }
-
-        .legend-scale {
-            display: flex;
-            height: 20px;
-            margin: 8px 0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .legend-scale-item {
-            flex: 1;
-        }
-
-        .legend-labels {
-            display: flex;
-            justify-content: space-between;
+        .popup-value-label {
             font-size: 11px;
-            color: #ccc;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #718096;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .popup-value {
+            font-size: 13px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .map-overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: 200px;
+            z-index: 1;
+        }
+
+        #legend h4 {
+            margin: 0 0 12px 0;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: #4a5568;
+        }
+
+        .legend-key {
+            display: inline-block;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            margin-right: 10px;
+            flex-shrink: 0;
         }
 
         #loading {
@@ -106,67 +119,33 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(26, 26, 26, 0.95);
-            padding: 30px;
-            border-radius: 8px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 16px;
             text-align: center;
             z-index: 1000;
-            border: 1px solid #444;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .loading-spinner {
-            border: 3px solid #444;
-            border-top: 3px solid #4CAF50;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid var(--accent);
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 24px;
+            height: 24px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px auto;
+            margin: 0 auto 12px auto;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-message {
-            color: #ff4444;
-            background: rgba(255, 68, 68, 0.1);
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #ff4444;
-            margin: 10px 0;
-        }
-
-        .hover-instruction {
-            font-size: 12px;
-            color: #888;
-            font-style: italic;
-            margin-top: 15px;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            #sidebar {
-                width: calc(100vw - 30px);
-                max-width: 350px;
-                right: 15px;
-                top: 15px;
-                position: fixed;
-                max-height: 40vh;
+            0% {
+                transform: rotate(0deg);
             }
-            
-            #sidebar h3 {
-                font-size: 16px;
-            }
-        }
 
-        @media (max-width: 480px) {
-            #sidebar {
-                width: calc(100vw - 20px);
-                right: 10px;
-                top: 10px;
-                padding: 15px;
+            100% {
+                transform: rotate(360deg);
             }
         }
     </style>
@@ -175,237 +154,120 @@
 <body>
     <div id="loading">
         <div class="loading-spinner"></div>
-        <div>Loading Australian SA4 Map...</div>
+        <div style="font-size: 13px; font-weight: 600; color: #4a5568;">Loading SA4 Map...</div>
     </div>
-    
-    <div id="map" role="application" aria-label="Interactive map of Australian Statistical Areas"></div>
-    
-    <div id="sidebar">
-        <h3>Australian Statistical Area Level 4</h3>
-        <div class="hover-instruction">Hover over regions for details, click to zoom</div>
-        <div id="region-info">
-            <div class="info-item">
-                <span class="info-label">Region:</span>
-                <span id="region-name">Hover over a region</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Value:</span>
-                <span id="region-value">-</span>
-            </div>
-        </div>
-        
-        <div id="legend">
-            <div class="legend-title">Color Scale</div>
-            <div class="legend-scale" id="legend-scale"></div>
-            <div class="legend-labels">
-                <span>1.0</span>
-                <span>5.5</span>
-                <span>10.0</span>
-            </div>
-        </div>
-        
-        <div id="error-container"></div>
+
+    <div id="map"></div>
+
+    <div class='map-overlay' id='legend'>
+        <h4>Statistical Scale</h4>
     </div>
 
     <script>
-        // Configuration
         const CONFIG = {
             mapboxToken: 'pk.eyJ1Ijoic2hhbm5vbmR1c3NveWUiLCJhIjoiY2oxbmhuM2F6MDBqYjMybWhkbTd6MjdxbyJ9.eJ3subj-fGRIz5ujR0xz8A',
             dataUrl: '/data/2011sa4.geojson',
             mapStyle: 'mapbox://styles/mapbox/dark-v9',
-            mapCenter: [132, -28],
-            mapZoom: 3.5,
-            colors: ['#F7FBFF', '#DEEBF7', '#C6DBEF', '#9ECAE1', '#6BAED6', '#4292C6', '#2171B5', '#08519C', '#08306B'],
-            breaks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            center: [134.5, -28.5],
+            zoom: 3.2,
+            colors: ['#edf8fb', '#b2e2e2', '#66c2a4', '#2ca25f', '#006d2c'],
+            breaks: [2, 4, 6, 8, 10]
         };
 
-        // Global variables
-        let map;
-        let mapData;
+        mapboxgl.accessToken = CONFIG.mapboxToken;
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: CONFIG.mapStyle,
+            center: CONFIG.center,
+            zoom: CONFIG.zoom
+        });
 
-        // Utility functions
-        function showError(message) {
-            const errorContainer = document.getElementById('error-container');
-            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
-        }
-
-        function hideLoading() {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.style.display = 'none';
-            }
-        }
-
-        function updateRegionInfo(regionName, value) {
-            document.getElementById('region-name').textContent = regionName || 'Hover over a region';
-            document.getElementById('region-value').textContent = value || '-';
-        }
-
-        function createLegend() {
-            const legendScale = document.getElementById('legend-scale');
-            CONFIG.colors.forEach(color => {
-                const item = document.createElement('div');
-                item.className = 'legend-scale-item';
-                item.style.backgroundColor = color;
-                legendScale.appendChild(item);
-            });
-        }
-
-        // Initialize Mapbox
-        function initializeMap() {
-            try {
-                mapboxgl.accessToken = CONFIG.mapboxToken;
-                
-                map = new mapboxgl.Map({
-                    container: 'map',
-                    style: CONFIG.mapStyle,
-                    center: CONFIG.mapCenter,
-                    zoom: CONFIG.mapZoom,
-                    attributionControl: true
+        map.on('load', () => {
+            d3.json(CONFIG.dataUrl).then(data => {
+                data.features.forEach(f => {
+                    f.properties.avg_score = parseFloat(d3.randomUniform(1, 10)().toFixed(2));
                 });
 
-                map.on('load', loadMapData);
-                
-                map.on('error', (e) => {
-                    if (e.error && e.error.message) {
-                        showError(`Map error: ${e.error.message}`);
-                    } else {
-                        showError('Failed to load map. Please check your internet connection.');
+                map.addSource('sa4', { type: 'geojson', data: data });
+
+                map.addLayer({
+                    id: 'sa4-fill',
+                    type: 'fill',
+                    source: 'sa4',
+                    paint: {
+                        'fill-outline-color': 'rgba(255,255,255,0.1)',
+                        'fill-color': {
+                            property: 'avg_score',
+                            stops: CONFIG.breaks.map((b, i) => [b, CONFIG.colors[i]])
+                        },
+                        'fill-opacity': 0.8
                     }
-                    hideLoading();
                 });
 
-            } catch (error) {
-                showError(`Failed to initialize map: ${error.message}`);
-                hideLoading();
-            }
-        }
-
-        // Load and process map data
-        function loadMapData() {
-            d3.json(CONFIG.dataUrl)
-                .then(data => {
-                    if (!data || !data.features) {
-                        throw new Error('Invalid data format');
-                    }
-                    
-                    mapData = data;
-                    
-                    // Generate random values for demonstration
-                    // TODO: Replace with real population data
-                    mapData.features.forEach(feature => {
-                        feature.properties.avg_score = parseFloat(d3.randomUniform(1, 10)().toFixed(2));
-                    });
-
-                    addMapLayers();
-                    setupMapInteractions();
-                    hideLoading();
-                })
-                .catch(error => {
-                    showError('Failed to load map data. Please try refreshing the page.');
-                    hideLoading();
-                });
-        }
-
-        // Add map layers
-        function addMapLayers() {
-            map.addSource('sa4-regions', {
-                type: 'geojson',
-                data: mapData
-            });
-
-            // Main fill layer
-            map.addLayer({
-                id: 'sa4-fill',
-                type: 'fill',
-                source: 'sa4-regions',
-                layout: {},
-                paint: {
-                    'fill-outline-color': '#FFFFFF',
-                    'fill-color': {
-                        property: 'avg_score',
-                        stops: [
-                            [CONFIG.breaks[0], CONFIG.colors[0]],
-                            [CONFIG.breaks[1], CONFIG.colors[1]],
-                            [CONFIG.breaks[2], CONFIG.colors[2]],
-                            [CONFIG.breaks[3], CONFIG.colors[3]],
-                            [CONFIG.breaks[4], CONFIG.colors[4]],
-                            [CONFIG.breaks[5], CONFIG.colors[5]],
-                            [CONFIG.breaks[6], CONFIG.colors[6]],
-                            [CONFIG.breaks[7], CONFIG.colors[7]],
-                            [CONFIG.breaks[8], CONFIG.colors[8]]
-                        ]
+                map.addLayer({
+                    id: 'sa4-hover',
+                    type: 'fill',
+                    source: 'sa4',
+                    paint: {
+                        'fill-outline-color': '#FFF',
+                        'fill-color': '#FFF',
+                        'fill-opacity': 0.2
                     },
-                    'fill-opacity': 0.8
-                }
-            });
+                    filter: ['==', 'SA4_NAME', '']
+                });
 
-            // Hover effect layer
-            map.addLayer({
-                id: 'sa4-hover',
-                type: 'fill',
-                source: 'sa4-regions',
-                layout: {},
-                paint: {
-                    'fill-outline-color': '#ffffff',
-                    'fill-color': '#ffffff',
-                    'fill-opacity': 0.3
-                },
-                filter: ['==', 'SA4_NAME', '']
-            });
-        }
+                const popup = new mapboxgl.Popup({
+                    closeButton: false,
+                    closeOnClick: false,
+                    offset: 15
+                });
 
-        // Setup map interactions
-        function setupMapInteractions() {
-            // Click to zoom
-            map.on('click', 'sa4-fill', (e) => {
-                if (e.features.length > 0) {
-                    const feature = e.features[0];
-                    try {
-                        const envelope = turf.envelope(feature);
-                        const bounds = new mapboxgl.LngLatBounds(
-                            envelope.geometry.coordinates[0][0],
-                            envelope.geometry.coordinates[0][2]
-                        );
-                        map.fitBounds(bounds, { padding: 50 });
-                    } catch (error) {
-                        // Silently handle bounds fitting errors
-                    }
-                }
-            });
-
-            // Hover effects
-            map.on('mousemove', 'sa4-fill', (e) => {
-                if (e.features.length > 0) {
-                    const feature = e.features[0];
-                    const regionName = feature.properties.SA4_NAME;
-                    const value = feature.properties.avg_score;
-                    
-                    map.setFilter('sa4-hover', ['==', 'SA4_NAME', regionName]);
-                    updateRegionInfo(regionName, value);
+                map.on('mousemove', 'sa4-fill', (e) => {
                     map.getCanvas().style.cursor = 'pointer';
-                }
-            });
+                    const props = e.features[0].properties;
+                    map.setFilter('sa4-hover', ['==', 'SA4_NAME', props.SA4_NAME]);
 
-            map.on('mouseleave', 'sa4-fill', () => {
-                map.setFilter('sa4-hover', ['==', 'SA4_NAME', '']);
-                updateRegionInfo();
-                map.getCanvas().style.cursor = '';
-            });
-        }
+                    popup.setLngLat(e.lngLat)
+                        .setHTML(`
+                            <span class="popup-title">${props.SA4_NAME}</span>
+                            <div style="display: flex; align-items: baseline;">
+                                <span class="popup-value-label">Score</span>
+                                <span class="popup-value">${props.avg_score}</span>
+                            </div>
+                        `)
+                        .addTo(map);
+                });
 
-        // Initialize everything
-        document.addEventListener('DOMContentLoaded', () => {
-            createLegend();
-            initializeMap();
+                map.on('mouseleave', 'sa4-fill', () => {
+                    map.getCanvas().style.cursor = '';
+                    popup.remove();
+                    map.setFilter('sa4-hover', ['==', 'SA4_NAME', '']);
+                });
+
+                map.on('click', 'sa4-fill', (e) => {
+                    const feature = e.features[0];
+                    const bounds = new mapboxgl.LngLatBounds();
+                    const coords = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates[0] : feature.geometry.coordinates[0][0];
+                    coords.forEach(coord => bounds.extend(coord));
+                    map.fitBounds(bounds, { padding: 50 });
+                });
+
+                // Legend
+                const legendEl = document.getElementById('legend');
+                const labels = ['Low', 'Below Avg', 'Average', 'Above Avg', 'High'];
+                labels.forEach((label, i) => {
+                    const row = document.createElement('div');
+                    row.className = 'legend-row';
+                    row.innerHTML = `<span class="legend-key" style="background-color: ${CONFIG.colors[i]}"></span><span>${label}</span>`;
+                    legendEl.appendChild(row);
+                });
+
+                document.getElementById('loading').style.display = 'none';
+            });
         });
 
-        // Handle window resize for mobile responsiveness
-        window.addEventListener('resize', () => {
-            if (map) {
-                map.resize();
-            }
-        });
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     </script>
 </body>
+
 </html>

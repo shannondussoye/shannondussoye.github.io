@@ -1,7 +1,7 @@
 export const SITE = {
-  website: "https://astro-paper.pages.dev/", // replace this with your deployed domain
+  website: "https://shannondussoye.github.io/", // replace this with your deployed domain
   author: "Shannon Dussoye",
-  profile: "https://satnaing.dev/",
+  profile: "https://shannondussoye.github.io/",
   desc: "A minimal, responsive and SEO-friendly Astro blog theme.",
   title: "Shannon Dussoye",
   ogImage: "astropaper-og.jpg",
@@ -14,7 +14,7 @@ export const SITE = {
   editPost: {
     enabled: true,
     text: "Edit page",
-    url: "https://github.com/satnaing/astro-paper/edit/main/",
+    url: "https://github.com/shannondussoye/shannondussoye.github.io/edit/main/",
   },
   dynamicOgImage: true,
   dir: "ltr", // "rtl" | "auto"

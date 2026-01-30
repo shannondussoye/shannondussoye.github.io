@@ -31,6 +31,12 @@ joined <- merge(map, data, by.x="SA4_CODE", by.y="region_id")
 geojson_write(joined, file = "sa4population.geojson")
 ```
 
-Using this processed data, I replaced the random color scale with actual population sizes and added breakdowns for both male and female populations to the sidebar. This is the first iteration, and I plan to update it as I find more interesting insights. The live map is accessible [here](https://shannondussoye.github.io/pages/sa4population.html).
+Using this processed data, I replaced the random color scale with actual population sizes and added breakdowns for both male and female populations directly into interactive tooltips. This is the first iteration, and I plan to update it as I find more interesting insights.
+
+<div class="map-container" style="position: relative; width: 100%; height: 600px; margin: 2rem 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <iframe src="/pages/sa4population.html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" title="Interactive Australian SA4 Population Map"></iframe>
+</div>
+
+The live map is accessible [here](/pages/sa4population.html).
 
 

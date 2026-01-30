@@ -46,7 +46,7 @@ Below is the live interactive map. Hover over regions to see details, and click 
 
 *Interactive map showing Australian Statistical Area Level 4 regions with random color coding. Each region displays different values when hovered.*
 
-You can also view the map in [full screen mode](https://shannondussoye.github.io/pages/sa4map.html) for the best experience.
+You can also view the map in [full screen mode](/pages/sa4map.html) for the best experience.
 
 ---
 
