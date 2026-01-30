@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <title>Census 2011 - SA4 Map</title>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.20.0/mapbox-gl.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/2.0.2/turf.min.js"></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.20.0/mapbox-gl.css' rel='stylesheet'/>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #sidebar {
+            position: absolute; top: 15px; right: 15px; bottom: 500px; width: 250px;
+            background: rgba(255, 255, 255, 0.8); font-family: Arial, sans-serif;
+            padding: 10px; overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id='map'></div>
+    <div id='sidebar'>
+        <h3>Australian SA4 Population</h3>
+        <div id="sa4name"></div>
+        <div id="popsize"></div>
+        <div id="popmsize"></div>
+        <div id="popfsize"></div>
+    </div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1Ijoic2hhbm5vbmR1c3NveWUiLCJhIjoiY2oxbmhuM2F6MDBqYjMybWhkbTd6MjdxbyJ9.eJ3subj-fGRIz5ujR0xz8A';
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v8',
+            center: [132, -28],
+            zoom: 3.5
+        });
+
+        const COLORS = ['#ffffe0', '#fff2c7', '#ffe4b1', '#ffd69d', '#ffc88e', '#ffb981', '#ffaa76', '#ff9a6e', '#fc8968', '#f77a63', '#f16b5f', '#e95d5a', '#e14f55', '#d8404e', '#cd3346', '#c2263d', '#b61832', '#a80c25', '#9b0316', '#8b0000'];
+        const BREAKS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+        const scale = d3.scaleLinear().domain([0, 600000]).range([0, 20]);
+
+        map.on('load', () => {
+            d3.json("../data/sa4population.geojson", (err, sa4) => {
+                if (err) throw err;
+
+                sa4.features.forEach(feature => {
+                    feature.properties.scaled_pop = scale(feature.properties.Tot_P_P);
+                    feature.properties.Tot_P_P = d3.format(",.2r")(feature.properties.Tot_P_P);
+                    feature.properties.Tot_P_M = d3.format(",.2r")(feature.properties.Tot_P_M);
+                    feature.properties.Tot_P_F = d3.format(",.2r")(feature.properties.Tot_P_F);
+                });
+
+                map.addSource('sa4', { type: 'geojson', data: sa4 });
+
+                map.addLayer({
+                    id: 'sa4',
+                    type: 'fill',
+                    source: 'sa4',
+                    paint: {
+                        'fill-outline-color': '#FFF',
+                        'fill-color': {
+                            property: 'scaled_pop',
+                            stops: BREAKS.map((break_, i) => [break_, COLORS[i]])
+                        },
+                        'fill-opacity': 0.9
+                    }
+                });
+
+                map.addLayer({
+                    id: 'sa4-hover',
+                    type: 'fill',
+                    source: 'sa4',
+                    paint: {
+                        'fill-outline-color': 'black',
+                        'fill-color': 'black',
+                        'fill-opacity': 0.4
+                    },
+                    filter: ["==", "SA4_NAME", ""]
+                });
+
+                const getbounds = map.getBounds();
+                let clicked;
+
+                map.on("click", (e) => {
+                    const features = map.queryRenderedFeatures(e.point, {layers: ["sa4"]});
+                    if (features.length && clicked !== features[0].properties.SA4_NAME) {
+                        const envelope = turf.envelope(features[0]).geometry.coordinates[0];
+                        map.fitBounds([envelope[0], envelope[2]]);
+                        clicked = features[0].properties.SA4_NAME;
+                    } else {
+                        map.fitBounds(getbounds);
+                    }
+                });
+
+                map.on("mousemove", (e) => {
+                    const features = map.queryRenderedFeatures(e.point, {layers: ["sa4"]});
+                    if (features.length) {
+                        const props = features[0].properties;
+                        map.setFilter("sa4-hover", ["==", "SA4_NAME", props.SA4_NAME]);
+                        d3.select("#sa4name").text(`Region: ${props.SA4_NAME}`);
+                        d3.select("#popsize").text(`Population: ${props.Tot_P_P}`);
+                        d3.select("#popmsize").text(`Male Population: ${props.Tot_P_M}`);
+                        d3.select("#popfsize").text(`Female Population: ${props.Tot_P_F}`);
+                    } else {
+                        map.setFilter("sa4-hover", ["==", "SA4_NAME", ""]);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+

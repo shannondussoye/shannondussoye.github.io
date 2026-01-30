@@ -1,0 +1,168 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import AboutMap from "@/components/AboutMap.astro";
+import { SITE } from "@/config";
+
+const title = `About | ${SITE.title}`;
+---
+
+<Layout title={title} scrollSmooth={false}>
+  <a 
+    href="/" 
+    class="fixed top-8 left-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 backdrop-blur-md border border-white/10 text-white/80 hover:text-white hover:bg-slate-900/80 transition-all group"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="m15 18-6-6 6-6"/></svg>
+    <span class="font-medium tracking-wide">Home</span>
+  </a>
+  
+  <AboutMap />
+
+  <main id="main-content" class="relative z-10 pointer-events-none">
+    <div id="scroll-wrapper" class="relative">
+        <!-- Step 1: Mauritius -->
+        <section class="step pointer-events-auto" data-step="0">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-teal-400 uppercase tracking-widest mb-2">The Foundation</div>
+                <h2 class="text-4xl font-black mb-4 italic">Mauritius 🇲🇺</h2>
+                <p class="text-lg text-slate-300">Roots in the Indian Ocean. Building a foundation in Computer Applications at Birla Institute of Technology Mesra.</p>
+            </div>
+        </section>
+
+        <!-- Step 2: Sydney -->
+        <section class="step pointer-events-auto" data-step="1">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-sky-400 uppercase tracking-widest mb-2">The New Chapter</div>
+                <h2 class="text-4xl font-black mb-4 italic">Sydney (2014) 🌏</h2>
+                <p class="text-lg text-slate-300">Transitioning to the rapid pulse of Sydney's tech ecosystem. Embarking on a new adventure down under.</p>
+            </div>
+        </section>
+
+        <!-- Step 3: UTS -->
+        <section class="step pointer-events-auto" data-step="2">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Specialization</div>
+                <h2 class="text-4xl font-black mb-4 italic">Data @ UTS</h2>
+                <p class="text-lg text-slate-300">Mastering data modelling and segmentation at UTS Central. Master of Information Technology in Data Analytics.</p>
+            </div>
+        </section>
+
+        <!-- Step 4: Tech FX -->
+        <section class="step pointer-events-auto" data-step="3">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">First Job</div>
+                <h2 class="text-4xl font-black mb-4 italic">Technology FX</h2>
+                <p class="text-lg text-slate-300">Service Desk Analyst / Project Co-ordinator. Learning the ropes of corporate IT and project delivery.</p>
+            </div>
+        </section>
+
+        <!-- Step 5: Equifax -->
+        <section class="step pointer-events-auto" data-step="4">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">First Data Job</div>
+                <h2 class="text-4xl font-black mb-4 italic">Equifax</h2>
+                <p class="text-lg text-slate-300">Insights Analyst. Driving credit risk insights and analytical solutions for the Australian market.</p>
+            </div>
+        </section>
+
+        <!-- Step 6: CBA -->
+        <section class="step pointer-events-auto" data-step="5">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-2">#1 Retail Bank</div>
+                <h2 class="text-4xl font-black mb-4 italic">CBA</h2>
+                <p class="text-lg text-slate-300">Sr. Technical BA / Manager Data Analytics. Leading data initiatives at Australia's largest retail bank.</p>
+            </div>
+        </section>
+
+        <!-- Step 7: Macquarie -->
+        <section class="step pointer-events-auto" data-step="6">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Investment Banking</div>
+                <h2 class="text-4xl font-black mb-4 italic">Macquarie</h2>
+                <p class="text-lg text-slate-300">Senior Manager - Data. Driving data strategy and governance in the investment banking space.</p>
+            </div>
+        </section>
+
+        <!-- Step 8: Summary (Zoom Out) -->
+        <section class="step pointer-events-auto" data-step="7">
+            <div class="glass-box">
+                <div class="text-xs font-bold text-teal-400 uppercase tracking-widest mb-2">The Journey So Far</div>
+                <h2 class="text-4xl font-black mb-4 italic">Overview</h2>
+                <p class="text-lg text-slate-300 mb-8">From Mauritius to Sydney's CBD. A decade of growth, data, and technology. YNWA ⚽.</p>
+                
+                <div class="flex flex-col gap-4">
+                  <a 
+                    href="/" 
+                    class="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-white text-slate-900 font-bold hover:bg-slate-200 transition-colors shadow-lg shadow-white/5"
+                  >
+                    <span>Read the Blog</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  </a>
+                  
+                  <div class="flex items-center justify-between pt-4 border-t border-white/10">
+                    <div class="flex gap-4 text-sm">
+                      <a href="mailto:contact@shannondussoye.com" class="text-teal-400 hover:underline">Email</a>
+                      <a href="https://twitter.com/shannondussoye" class="text-slate-400 hover:text-white transition-colors">Twitter</a>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="h-[50vh]"></div>
+    </div>
+  </main>
+  
+  <Footer />
+</Layout>
+
+<style>
+    .step {
+        min-height: 100vh;
+        position: relative;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10%;
+    }
+
+    .glass-box {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        max-width: 450px;
+        padding: 2.5rem;
+        border-radius: 1.5rem;
+        color: white;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.5s ease;
+    }
+
+    .step.active .glass-box {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Integration Fixes */
+    :global(footer) {
+        position: relative;
+        z-index: 20;
+        background: rgba(15, 23, 42, 0.8) !important;
+        backdrop-filter: blur(8px);
+        margin-top: 0 !important;
+        padding: 2rem 0 !important;
+    }
+
+    @media (max-width: 1024px) {
+        .step {
+            justify-content: center;
+            padding-right: 0;
+        }
+        .glass-box {
+            margin: 0 1rem;
+        }
+    }
+</style>

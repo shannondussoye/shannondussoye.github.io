@@ -1,0 +1,70 @@
+---
+layout: page
+title: Just Another Random Blog
+subtitle: This is where I will tell my friends way too much about me and blog about stuffs that am passionate about!
+use-site-title: true
+---
+
+<section class="posts-list" role="main" aria-label="Blog posts">
+  {% for post in site.posts %}
+  <article class="post-preview" itemscope itemtype="http://schema.org/BlogPosting">
+    <a href="{{ post.url | prepend: site.baseurl }}" itemprop="url">
+	  <h2 class="post-title" itemprop="headline">{{ post.title }}</h2>
+
+	  {% if post.subtitle %}
+	  <h3 class="post-subtitle">
+	    {{ post.subtitle }}
+	  </h3>
+	  {% endif %}
+    </a>
+
+    <p class="post-meta">
+      Posted on <time datetime="{{ post.date | date_to_xmlschema }}" itemprop="datePublished">{{ post.date | date: "%B %-d, %Y" }}</time>
+    </p>
+
+    <div class="post-entry-container">
+      {% if post.image %}
+      <div class="post-image">
+        <a href="{{ post.url | prepend: site.baseurl }}">
+          <img src="{{ post.image }}" alt="{{ post.title | escape }}" loading="lazy">
+        </a>
+      </div>
+      {% endif %}
+      <div class="post-entry" itemprop="description">
+        <meta itemprop="author" content="{{ site.author.name }}">
+        {{ post.excerpt | strip_html | xml_escape | truncatewords: site.excerpt_length }}
+        {% assign excerpt_word_count = post.excerpt | number_of_words %}
+        {% if post.content != post.excerpt or excerpt_word_count > site.excerpt_length %}
+          <a href="{{ post.url | prepend: site.baseurl }}" class="post-read-more">[Read&nbsp;More]</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if post.tags.size > 0 %}
+    <div class="blog-tags">
+      Tags:
+      {% if site.link-tags %}
+      {% for tag in post.tags %}
+      <a href="{{ site.baseurl }}/tag/{{ tag }}">{{ tag }}</a>
+      {% endfor %}
+      {% else %}
+        {{ post.tags | join: ", " }}
+      {% endif %}
+    </div>
+    {% endif %}
+
+   </article>
+  {% endfor %}
+</section>
+
+{% comment %}
+  Pagination only works on index.html. Since this is a page, we'll show all posts.
+  Consider limiting posts shown or moving blog to index.html for pagination.
+{% endcomment %}
+{% if site.posts.size > 10 %}
+<nav class="post-navigation" aria-label="Posts navigation">
+  <p class="text-center">
+    <em>Showing all {{ site.posts.size }} posts. Consider implementing archive pages for better navigation.</em>
+  </p>
+</nav>
+{% endif %}
