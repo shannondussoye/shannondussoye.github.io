@@ -31,7 +31,7 @@ const {
   pubDatetime,
   modDatetime,
   timezone,
-  tags,
+  // tags,
   hideEditPost,
 } = post.data;
 
@@ -42,8 +42,6 @@ let ogImageUrl: string | undefined;
 // Determine OG image source
 if (typeof initOgImage === "string") {
   ogImageUrl = initOgImage; // Remote OG image (absolute URL)
-} else if (initOgImage?.src) {
-  ogImageUrl = initOgImage.src; // Local asset
 }
 
 // Use dynamic OG image if enabled and no remote|local ogImage
