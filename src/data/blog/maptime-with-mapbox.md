@@ -17,10 +17,10 @@ While D3.js is incredibly powerful for complex visualizations, I realized that f
 
 Using the same GeoJSON file as before, I loaded the data directly into Mapbox and translated the original D3.js functions into native JavaScript. One major change was moving the data display from a static sidebar to dynamic tooltips—a design choice inspired by the NYT's clean interaction model.
 
-<p align="center"> 
-    <img src="/img/Maptime.png" alt="Screenshot of Australia SA4 Population Map using Mapbox">
-</p>
+<div class="map-container" style="position: relative; width: 100%; height: 500px; margin: 2rem 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+    <iframe src="/pages/mapbox.html" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"></iframe>
+</div>
 
-The core logic remains similar to the previous iteration, but the user interface feels much lighter and more responsive. You can view the live map [here](https://shannondussoye.github.io/pages/mapbox.html).
+The core logic remains similar to the previous iteration, but the user interface feels much lighter and more responsive. You can view the live map [here](/pages/mapbox.html).
 
 
