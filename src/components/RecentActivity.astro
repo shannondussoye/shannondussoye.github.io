@@ -1,0 +1,167 @@
+---
+import { XMLParser } from "fast-xml-parser";
+import IconMail from "@/assets/icons/IconMail.svg";
+import IconCloud from "@/assets/icons/IconMenuDeep.svg"; 
+import IconZap from "@/assets/icons/IconArchive.svg"; 
+import IconExternal from "@/assets/icons/IconArrowRight.svg";
+
+const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
+const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
+
+// Initialize the stream
+let activityItems: any[] = [];
+
+// 1. ATTEMPT LIVE BLUESKY FETCH
+try {
+  const bskyResponse = await fetch(
+    `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${BLUESKY_HANDLE}&limit=10`
+  );
+  
+  if (bskyResponse.ok) {
+    const data = await bskyResponse.json();
+    const bskyItems = data.feed.map((item: any) => {
+      const post = item.post;
+      return {
+        type: "bluesky",
+        platform: "Bluesky",
+        label: "Post",
+        text: post.record.text,
+        date: new Date(post.indexedAt).getTime(),
+        displayDate: new Date(post.indexedAt).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric'
+        }),
+        color: "text-[#0085ff]",
+        icon: IconCloud,
+        link: `https://bsky.app/profile/${post.author.handle}/post/${post.uri.split('/').pop()}`
+      };
+    });
+    activityItems = [...activityItems, ...bskyItems];
+  }
+} catch (e) {
+  console.error("Bluesky fetch failed.");
+}
+
+// 2. ATTEMPT LIVE SUBSTACK FETCH
+try {
+  const ssResponse = await fetch(SUBSTACK_URL);
+  if (ssResponse.ok) {
+    const xmlData = await ssResponse.text();
+    const parser = new XMLParser();
+    const jsonObj = parser.parse(xmlData);
+    const items = jsonObj.rss?.channel?.item;
+    
+    if (items) {
+      const itemsList = Array.isArray(items) ? items : [items];
+      const ssItems = itemsList.slice(0, 3).map((item: any) => {
+        const summary = item.description 
+          ? item.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...'
+          : "";
+        return {
+          type: "substack",
+          platform: "Substack",
+          label: "Article",
+          title: item.title,
+          recommendation: summary,
+          date: new Date(item.pubDate).getTime(),
+          displayDate: new Date(item.pubDate).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric'
+          }),
+          color: "text-[#ff6719]",
+          icon: IconMail,
+          link: item.link
+        };
+      });
+      activityItems = [...activityItems, ...ssItems];
+    }
+  }
+} catch (e) {
+  // Silent fail if feed is not ready
+}
+
+// Sort everything by date
+activityItems.sort((a, b) => b.date - a.date);
+---
+
+<section id="recent-activity" class="pt-12 pb-6 border-t border-dashed border-border mt-8">
+  <div class="flex items-center justify-between mb-8">
+    <h2 class="text-2xl font-semibold tracking-wide flex items-center gap-3 text-main">
+      <IconZap class="w-6 h-6 text-accent" />
+      Recent Activity
+    </h2>
+    
+    <div class="hidden sm:flex gap-2">
+      {["Bluesky", "Substack"].map(platform => (
+        <span class="px-3 py-1 rounded-full bg-border/30 text-[10px] font-bold uppercase tracking-wider text-dim">
+          {platform}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <div class="relative group">
+    {activityItems.length > 0 ? (
+      <div class="rounded-3xl border border-border bg-theme-card/30 backdrop-blur-xl overflow-hidden shadow-2xl">
+        <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
+          {activityItems.map((item) => (
+            <a 
+              href={item.link} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="flex gap-4 p-6 border-b border-border/50 last:border-0 hover:bg-white/5 transition-all duration-300 group/item block"
+            >
+              <div class={`flex-shrink-0 w-10 h-10 rounded-xl bg-border/20 flex items-center justify-center ${item.color} group-hover/item:scale-110 transition-transform`}>
+                <item.icon class="w-5 h-5" />
+              </div>
+
+              <div class="flex-grow">
+                <div class={`text-[10px] font-black uppercase tracking-widest mb-1 ${item.color}`}>
+                  {item.platform} • {item.label}
+                </div>
+
+                {item.type === 'substack' ? (
+                  <>
+                    <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
+                    <div class="text-sm text-dim italic border-l-2 border-border pl-4 my-3">
+                      "{item.recommendation}"
+                    </div>
+                  </>
+                ) : (
+                  <div class="text-base text-main/90 leading-relaxed mb-3 whitespace-pre-wrap">
+                    {item.text}
+                  </div>
+                )}
+
+                <div class="flex justify-between items-center text-xs text-dim">
+                  <span>{item.displayDate}</span>
+                  <IconExternal class="w-4 h-4 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-1 transition-all" />
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div class="py-16 text-center border border-dashed border-border rounded-3xl text-dim italic bg-white/2">
+        Syncing digital pulse...
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>

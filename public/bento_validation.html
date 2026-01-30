@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Stream - Design Validation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.6);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent-twitter: #1DA1F2;
+            --accent-bluesky: #0085ff;
+            --accent-substack: #ff6719;
+            --accent-green: #10b981;
+            --text-main: #f9fafb;
+            --text-dim: #9ca3af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 5rem 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        /* Layout Grid */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        /* Unified Stream Card */
+        .stream-card {
+            grid-column: span 12;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stream-header {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.01);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stream-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Filter Pills */
+        .filters {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-pill {
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-dim);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .filter-pill:hover,
+        .filter-pill.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        .stream-content {
+            max-height: 800px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .stream-item {
+            display: flex;
+            gap: 1.5rem;
+            padding: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: background 0.2s;
+        }
+
+        .stream-item:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .item-main {
+            flex-grow: 1;
+        }
+
+        .item-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .item-text {
+            font-size: 1.05rem;
+            color: var(--text-main);
+            margin-bottom: 0.75rem;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* Substack Special Styling */
+        .substack-quote {
+            padding-left: 1.25rem;
+            border-left: 2px solid var(--accent-substack);
+            margin: 1rem 0;
+            font-style: italic;
+            color: var(--text-dim);
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .item-stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        .item-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .stream-item {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .stream-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header-section">
+            <div class="header-title">
+                <h1>Recent Activity</h1>
+                <p>Unified stream of thoughts and shares from across the web.</p>
+            </div>
+            <div style="font-family: 'JetBrains+Mono', monospace; font-size: 0.8rem; color: var(--accent-green);">
+                ● LIVE UPDATES
+            </div>
+        </div>
+
+        <div class="bento-grid">
+
+            <!-- Unified Activity Stream -->
+            <div class="card stream-card">
+                <div class="stream-header">
+                    <h2><i data-lucide="zap" size="20" style="color: var(--accent-green)"></i> Latest Stream</h2>
+                    <div class="filters">
+                        <div class="filter-pill active">All</div>
+                        <div class="filter-pill">X.com</div>
+                        <div class="filter-pill">Bluesky</div>
+                        <div class="filter-pill">Substack</div>
+                    </div>
+                </div>
+
+                <div class="stream-content">
+
+                    <!-- Substack Entry -->
+                    <div class="stream-item">
+                        <div class="icon-wrap" style="color: var(--accent-substack)"><i data-lucide="mail"></i></div>
+                        <div class="item-main">
+                            <div class="item-label" style="color: var(--accent-substack)">Substack • Recommended Share
+                            </div>
+                            <div class="item-text">Shared: <b>"The Evolution of the Modern Data Stack"</b> by Benn
+                                Stancil.</div>
+                            <div class="substack-quote">
+                                "This is the most honest take I've seen on the 'consolidation' phase we are entering. A
+                                must-read for any data leader."
+                            </div>
+                            <div class="item-footer">
+                                <div>1 hour ago</div>
+                                <div class="item-stats">
+                                    <span><i data-lucide="external-link" size="14"></i> View Article</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Twitter Entry -->
+                    <div class="stream-item">
+                        <div class="icon-wrap" style="color: var(--accent-twitter)"><i data-lucide="twitter"></i></div>
+                        <div class="item-main">
+                            <div class="item-label" style="color: var(--accent-twitter)">Twitter • Thread</div>
+                            <div class="item-text">
+                                1/5: Just finished a benchmark of the new Apple M3 Max for heavy GeoJSON processing. The
+                                single-core performance on map renders is 20% faster than the M2...
+                            </div>
+                            <div class="item-footer">
+                                <div>4 hours ago</div>
+                                <div class="item-stats">
+                                    <span><i data-lucide="heart" size="14"></i> 42</span>
+                                    <span><i data-lucide="repeat" size="14"></i> 12</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bluesky Entry -->
+                    <div class="stream-item">
+                        <div class="icon-wrap" style="color: var(--accent-bluesky)"><i data-lucide="cloud"></i></div>
+                        <div class="item-main">
+                            <div class="item-label" style="color: var(--accent-bluesky)">Bluesky • Post</div>
+                            <div class="item-text">
+                                Really enjoying the vibe on Bluesky today. It's refreshing to see technical discussions
+                                happening without the noise. 🦋
+                            </div>
+                            <div class="item-footer">
+                                <div>Yesterday</div>
+                                <div class="item-stats">
+                                    <span><i data-lucide="heart" size="14"></i> 15</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Another Substack Entry -->
+                    <div class="stream-item">
+                        <div class="icon-wrap" style="color: var(--accent-substack)"><i data-lucide="mail"></i></div>
+                        <div class="item-main">
+                            <div class="item-label" style="color: var(--accent-substack)">Substack • Recommended Share
+                            </div>
+                            <div class="item-text">Shared: <b>"Database Internals: A Deep Dive"</b> from The Pragmatic
+                                Engineer.</div>
+                            <div class="item-footer">
+                                <div>Jan 25</div>
+                                <div class="item-stats">
+                                    <span><i data-lucide="external-link" size="14"></i> Read Article</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Twitter Entry -->
+                    <div class="stream-item">
+                        <div class="icon-wrap" style="color: var(--accent-twitter)"><i data-lucide="twitter"></i></div>
+                        <div class="item-main">
+                            <div class="item-label" style="color: var(--accent-twitter)">Twitter • Post</div>
+                            <div class="item-text">
+                                Leaflet + Astro is the ultimate setup for static portfolios with a punch. 🚀
+                            </div>
+                            <div class="item-footer">
+                                <div>Jan 24</div>
+                                <div class="item-stats">
+                                    <span><i data-lucide="heart" size="14"></i> 89</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
