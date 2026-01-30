@@ -1,7 +1,7 @@
 ---
 author: Shannon Dussoye
 pubDatetime: '2019-01-18T00:00:00Z'
-title: Essential Apps for Boosting Productivity
+title: Being More Productive
 postSlug: being-more-productive
 featured: false
 draft: false
