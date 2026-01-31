@@ -21,17 +21,30 @@ const sortedItems = items.sort(
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[300px]">
       {
         sortedItems.map((item, index) => {
-          // Bento logic: 1st item is wide, others vary
-          const isWide = index === 0 || index === 3;
-          const isTall = index === 1;
+          const total = sortedItems.length;
+          
+          let spans = "md:col-span-1 md:row-span-1";
+          
+          if (total === 1) {
+            spans = "md:col-span-4 md:row-span-2";
+          } else if (total === 2) {
+            spans = "md:col-span-2 md:row-span-2";
+          } else if (total === 3) {
+            if (index === 0) spans = "md:col-span-2 md:row-span-2";
+            else spans = "md:col-span-2 md:row-span-1";
+          } else {
+            // Adaptive logic for 4+ items
+            const isWide = index % 4 === 0 || index % 4 === 3;
+            const isTall = index % 4 === 1;
+            spans = `${isWide ? "md:col-span-2" : "md:col-span-1"} ${isTall ? "md:row-span-2" : "md:row-span-1"}`;
+          }
           
           return (
             <a
               href={`/workshop/${item.id}/`}
               class:list={[
                 "group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-background transition-all hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/5",
-                isWide ? "md:col-span-2" : "md:col-span-1",
-                isTall ? "md:row-span-2" : "md:row-span-1",
+                spans
               ]}
             >
               {item.data.heroImage && (
@@ -39,9 +52,9 @@ const sortedItems = items.sort(
                   <img
                     src={item.data.heroImage}
                     alt={item.data.title}
-                    class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 opacity-40 group-hover:opacity-60"
+                    class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 opacity-100"
                   />
-                  <div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 </div>
               )}
               
@@ -53,10 +66,10 @@ const sortedItems = items.sort(
                 </div>
 
                 <div class="mt-4">
-                  <h2 class="text-xl font-bold tracking-tight group-hover:text-accent leading-tight">
+                  <h2 class="text-xl font-bold tracking-tight text-white group-hover:text-accent leading-tight">
                     {item.data.title}
                   </h2>
-                  <p class="mt-2 text-xs leading-relaxed text-foreground/60 line-clamp-2">
+                  <p class="mt-2 text-xs leading-relaxed text-slate-200 line-clamp-2">
                     {item.data.description}
                   </p>
                 </div>
@@ -64,12 +77,12 @@ const sortedItems = items.sort(
                 <div class="mt-4 flex items-center justify-between">
                    <div class="flex gap-1">
                     {item.data.tags.slice(0, 2).map(tag => (
-                      <span class="text-[9px] text-foreground/30 font-medium bg-muted/50 px-2 py-0.5 rounded">
+                      <span class="text-[9px] text-white/50 font-medium bg-white/5 px-2 py-0.5 rounded border border-white/10">
                         #{tag}
                       </span>
                     ))}
                   </div>
-                  <span class="text-[10px] text-foreground/40 font-mono">
+                  <span class="text-[10px] text-white/40 font-mono">
                     {item.data.pubDatetime.toLocaleDateString("en-US", { year: 'numeric' })}
                   </span>
                 </div>

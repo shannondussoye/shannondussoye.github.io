@@ -38,4 +38,19 @@ const workshop = defineCollection({
     }),
 });
 
-export const collections = { blog, workshop };
+const atlas = defineCollection({
+  loader: glob({ pattern: "**/[^_]*.{md,mdx}", base: `./src/data/atlas` }),
+  schema: () =>
+    z.object({
+      title: z.string(),
+      location: z.string(),
+      coordinates: z.tuple([z.number(), z.number()]), // [lat, lng]
+      pubDatetime: z.coerce.date(),
+      images: z.array(z.string()).default([]), // Array of image URLs for carousel
+      category: z.enum(["travel", "dining"]).default("travel"),
+      tags: z.array(z.string()).default([]),
+      draft: z.boolean().optional(),
+    }),
+});
+
+export const collections = { blog, workshop, atlas };
