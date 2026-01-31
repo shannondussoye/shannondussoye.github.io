@@ -55,6 +55,8 @@ const recentPosts = sortedPosts;
       }
     </section>
 
+    <RecentActivity />
+    
     {
       recentPosts.length > 0 && (
         <section id="recent-posts" class="pt-12 pb-6">
@@ -75,8 +77,6 @@ const recentPosts = sortedPosts;
         <IconArrowRight class="inline-block rtl:-rotate-180" />
       </LinkButton>
     </div>
-
-    <RecentActivity />
   </main>
   <Footer />
 </Layout>
