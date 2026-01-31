@@ -2,10 +2,9 @@
 import { getCollection, render } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Footer from "@/components/Footer.astro";
 import { SITE } from "@/config";
 
-const memories = await getCollection("atlas", ({ data }) => !data.draft);
+const memories = (await getCollection("atlas", ({ data }) => !data.draft)) as any[];
 const sortedMemories = memories.sort(
   (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
 );
@@ -27,7 +26,7 @@ const groupedMemories = memoriesWithContent.reduce((acc, memory) => {
   
   acc[year][month].push(memory);
   return acc;
-}, {} as Record<number, Record<string, typeof memoriesWithContent>>);
+}, {} as Record<number, Record<string, any[]>>);
 
 const years = Object.keys(groupedMemories).sort((a, b) => Number(b) - Number(a));
 ---
@@ -97,7 +96,7 @@ const years = Object.keys(groupedMemories).sort((a, b) => Number(b) - Number(a))
           {memory.data.images && memory.data.images.length > 0 && (
             <div class="carousel-container relative w-full mb-8 group/carousel">
               <div class="carousel-wrapper flex overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-2xl border border-border bg-muted/20 shadow-2xl transition-all duration-500 group-hover:shadow-accent/5">
-                {memory.data.images.map((img, i) => (
+                {memory.data.images.map((img: string, i: number) => (
                   <div class="carousel-item flex-none w-full aspect-video snap-center overflow-hidden">
                     <img src={img} alt={`${memory.data.title} - image ${i + 1}`} class="w-full h-full object-cover transition-transform duration-700 group-hover/carousel:scale-[1.03]" loading="lazy" />
                   </div>
@@ -119,7 +118,7 @@ const years = Object.keys(groupedMemories).sort((a, b) => Number(b) - Number(a))
               {/* Indicators */}
               {memory.data.images.length > 1 && (
                 <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-2.5 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/10 z-10 transition-all duration-300 shadow-lg">
-                  {memory.data.images.map((_, i) => (
+                  {memory.data.images.map((_: any, i: number) => (
                     <div class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/30 transition-all duration-500" data-index={i}></div>
                   ))}
                 </div>
