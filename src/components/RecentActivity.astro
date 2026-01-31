@@ -1,12 +1,17 @@
 ---
+import { getCollection } from "astro:content";
 import { XMLParser } from "fast-xml-parser";
 import IconMail from "@/assets/icons/IconMail.svg";
 import IconCloud from "@/assets/icons/IconMenuDeep.svg"; 
 import IconZap from "@/assets/icons/IconArchive.svg"; 
 import IconExternal from "@/assets/icons/IconArrowRight.svg";
+import IconSparkles from "@/assets/icons/IconSparkles.svg";
+import IconEdit from "@/assets/icons/IconEdit.svg";
+import IconGlobe from "@/assets/icons/IconGlobe.svg";
 
 const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
 const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
+const HN_USERNAME = "shannondussoye"; // Placeholder, can be moved to env
 
 // Initialize the stream
 let activityItems: any[] = [];
@@ -77,25 +82,113 @@ try {
     }
   }
 } catch (e) {
-  // Silent fail if feed is not ready
+  // Silent fail
 }
 
-// Sort everything by date
+// 3. ATTEMPT HN FETCH
+try {
+  const hnUserResponse = await fetch(`https://hacker-news.firebaseio.com/v0/user/${HN_USERNAME}.json`);
+  if (hnUserResponse.ok) {
+    const userData = await hnUserResponse.json();
+    if (userData.submitted) {
+      const topSubmissions = userData.submitted.slice(0, 5);
+      const hnItems = await Promise.all(
+        topSubmissions.map(async (id: number) => {
+          const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+          const item = await itemRes.json();
+          return {
+            type: "hackernews",
+            platform: "Hacker News",
+            label: item.type === "comment" ? "Comment" : "Story",
+            title: item.title || (item.text ? item.text.substring(0, 100) + "..." : "HN Interaction"),
+            date: item.time * 1000,
+            displayDate: new Date(item.time * 1000).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric'
+            }),
+            color: "text-[#fb651e]",
+            icon: IconGlobe,
+            link: `https://news.ycombinator.com/item?id=${id}`
+          };
+        })
+      );
+      activityItems = [...activityItems, ...hnItems];
+    }
+  }
+} catch (e) {
+  // Silent fail
+}
+
+// 4. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
+const internalBlogPosts = await getCollection("blog", ({ data }) => !data.draft);
+const blogItems = internalBlogPosts.map(post => ({
+  type: "blog",
+  platform: "Writing",
+  category: "writing",
+  label: "Post",
+  title: post.data.title,
+  recommendation: post.data.description,
+  date: post.data.pubDatetime.getTime(),
+  displayDate: post.data.pubDatetime.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric'
+  }),
+  color: "text-accent",
+  icon: IconEdit,
+  link: `/posts/${post.id}/`
+}));
+
+const workshopEntries = await getCollection("workshop", ({ data }) => !data.draft);
+const workshopItems = workshopEntries.map(entry => ({
+  type: "workshop",
+  platform: "Workshop",
+  category: "workshop",
+  label: "Project",
+  title: entry.data.title,
+  recommendation: entry.data.description,
+  date: entry.data.pubDatetime.getTime(),
+  displayDate: entry.data.pubDatetime.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric'
+  }),
+  color: "text-yellow-500",
+  icon: IconSparkles,
+  link: "/workshop/"
+}));
+
+// Add categories to existing items
+const bskyItemsWithCat = activityItems.filter(i => i.type === "bluesky").map(i => ({...i, category: "social"}));
+const ssItemsWithCat = activityItems.filter(i => i.type === "substack").map(i => ({...i, category: "writing"}));
+const hnItemsWithCat = activityItems.filter(i => i.type === "hackernews").map(i => ({...i, category: "social"}));
+
+activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...blogItems, ...workshopItems];
+
+// Final Sort & Cap
 activityItems.sort((a, b) => b.date - a.date);
+activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
 ---
 
-<section id="recent-activity" class="pt-12 pb-6 border-t border-dashed border-border mt-8">
-  <div class="flex items-center justify-between mb-8">
+<section id="recent-activity" class="pt-12 pb-6 mt-4">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
     <h2 class="text-2xl font-semibold tracking-wide flex items-center gap-3 text-main">
       <IconZap class="w-6 h-6 text-accent" />
-      Recent Activity
+      Unified Digital Pulse
     </h2>
     
-    <div class="hidden sm:flex gap-2">
-      {["Bluesky", "Substack"].map(platform => (
-        <span class="px-3 py-1 rounded-full bg-border/30 text-[10px] font-bold uppercase tracking-wider text-dim">
-          {platform}
-        </span>
+    <div class="flex flex-wrap gap-2" id="filter-buttons">
+      <button 
+        data-filter="all" 
+        class="filter-btn active px-4 py-1.5 rounded-full bg-border/20 text-[10px] font-black uppercase tracking-widest text-dim transition-all hover:bg-border/40"
+      >
+        All
+      </button>
+      {["Social", "Writing", "Workshop"].map(cat => (
+        <button 
+          data-filter={cat.toLowerCase()} 
+          class="filter-btn px-4 py-1.5 rounded-full bg-border/10 text-[10px] font-black uppercase tracking-widest text-dim/60 transition-all hover:bg-border/30 hover:text-dim"
+        >
+          {cat}
+        </button>
       ))}
     </div>
   </div>
@@ -103,13 +196,14 @@ activityItems.sort((a, b) => b.date - a.date);
   <div class="relative group">
     {activityItems.length > 0 ? (
       <div class="rounded-3xl border border-border bg-theme-card/30 backdrop-blur-xl overflow-hidden shadow-2xl">
-        <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
+        <div class="max-h-[600px] overflow-y-auto custom-scrollbar" id="activity-feed">
           {activityItems.map((item) => (
             <a 
               href={item.link} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              class="flex gap-4 p-6 border-b border-border/50 last:border-0 hover:bg-white/5 transition-all duration-300 group/item block"
+              target={item.link.startsWith('http') ? "_blank" : "_self"}
+              rel={item.link.startsWith('http') ? "noopener noreferrer" : ""} 
+              data-category={item.category}
+              class="activity-item flex gap-4 p-6 border-b border-border/50 last:border-0 hover:bg-white/5 transition-all duration-300 group/item block"
             >
               <div class={`flex-shrink-0 w-10 h-10 rounded-xl bg-border/20 flex items-center justify-center ${item.color} group-hover/item:scale-110 transition-transform`}>
                 <item.icon class="w-5 h-5" />
@@ -120,12 +214,14 @@ activityItems.sort((a, b) => b.date - a.date);
                   {item.platform} • {item.label}
                 </div>
 
-                {item.type === 'substack' ? (
+                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' ? (
                   <>
                     <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
-                    <div class="text-sm text-dim italic border-l-2 border-border pl-4 my-3">
-                      "{item.recommendation}"
-                    </div>
+                    {item.recommendation && (
+                      <div class="text-sm text-dim italic border-l-2 border-border pl-4 my-3">
+                        "{item.recommendation}"
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div class="text-base text-main/90 leading-relaxed mb-3 whitespace-pre-wrap">
@@ -150,7 +246,53 @@ activityItems.sort((a, b) => b.date - a.date);
   </div>
 </section>
 
+<script>
+  function setupFilters() {
+    const buttons = document.querySelectorAll('.filter-btn');
+    const items = document.querySelectorAll('.activity-item');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+
+        // Update Button Styles
+        buttons.forEach(b => {
+          b.classList.remove('active', 'bg-border/40', 'text-dim');
+          b.classList.add('bg-border/10', 'text-dim/60');
+        });
+        btn.classList.add('active', 'bg-border/40', 'text-dim');
+        btn.classList.remove('bg-border/10', 'text-dim/60');
+
+        // Filter Items
+        items.forEach(item => {
+          const category = item.getAttribute('data-category');
+          if (filter === 'all' || category === filter) {
+            (item as HTMLElement).style.display = 'flex';
+            (item as HTMLElement).style.opacity = '1';
+          } else {
+            (item as HTMLElement).style.display = 'none';
+            (item as HTMLElement).style.opacity = '0';
+          }
+        });
+      });
+    });
+  }
+
+  // Run on initial load and view transitions
+  setupFilters();
+  document.addEventListener('astro:after-swap', setupFilters);
+</script>
+
 <style>
+  .filter-btn.active {
+    box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.2);
+  }
+
+  .activity-item {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
