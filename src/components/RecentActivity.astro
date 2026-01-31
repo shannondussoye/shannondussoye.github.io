@@ -8,11 +8,13 @@ import IconExternal from "@/assets/icons/IconArrowRight.svg";
 import IconSparkles from "@/assets/icons/IconSparkles.svg";
 import IconEdit from "@/assets/icons/IconEdit.svg";
 import IconGlobe from "@/assets/icons/IconGlobe.svg";
+import IconGitHub from "@/assets/icons/IconGitHub.svg";
 
 const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
 const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
 const HN_USERNAME = import.meta.env.PUBLIC_HN_USERNAME || "notrealrootuser";
 const RAINDROP_RSS_URL = import.meta.env.PUBLIC_RAINDROP_RSS_URL || "https://bg.raindrop.io/rss/public/66293279";
+const GITHUB_USERNAME = "shannondussoye";
 
 // Initialize the stream
 let activityItems: any[] = [];
@@ -156,7 +158,31 @@ try {
   // Silent fail
 }
 
-// 5. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
+// 5. ATTEMPT GITHUB STARS FETCH
+try {
+  const ghResponse = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/starred?per_page=10`);
+  if (ghResponse.ok) {
+    const data = await ghResponse.json();
+    const ghItems = data.map((repo: any) => ({
+      type: "github-star",
+      platform: "GitHub",
+      category: "stars",
+      label: "Star",
+      title: repo.full_name,
+      recommendation: repo.description,
+      date: new Date().getTime(), // GitHub Stars API doesn't provide starred_at without special header
+      displayDate: "Recent",
+      color: "text-purple-400",
+      icon: IconGitHub,
+      link: repo.html_url
+    }));
+    activityItems = [...activityItems, ...ghItems];
+  }
+} catch (e) {
+  // Silent fail
+}
+
+// 6. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
 const internalBlogPosts = await getCollection("blog", ({ data }) => !data.draft);
 const blogItems = internalBlogPosts.map(post => ({
   type: "blog",
@@ -198,12 +224,13 @@ const bskyItemsWithCat = activityItems.filter(i => i.type === "bluesky").map(i =
 const ssItemsWithCat = activityItems.filter(i => i.type === "substack").map(i => ({...i, category: "writing"}));
 const hnItemsWithCat = activityItems.filter(i => i.type === "hackernews").map(i => ({...i, category: "social"}));
 const rdItemsWithCat = activityItems.filter(i => i.type === "raindrop"); // already has category
+const ghItemsWithCat = activityItems.filter(i => i.type === "github-star"); // already has category
 
-activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...rdItemsWithCat, ...blogItems, ...workshopItems];
+activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...rdItemsWithCat, ...ghItemsWithCat, ...blogItems, ...workshopItems];
 
 // Final Sort & Cap
 activityItems.sort((a, b) => b.date - a.date);
-activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
+activityItems = activityItems.slice(0, 25); // Cap at 25 most recent
 ---
 
 <section id="recent-activity" class="pt-12 pb-6 mt-4">
@@ -224,7 +251,7 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
         >
           All
         </button>
-        {["Social", "Writing", "Workshop", "Reading"].map(cat => (
+        {["Social", "Writing", "Workshop", "Reading", "Stars"].map(cat => (
           <button 
             data-filter={cat.toLowerCase()} 
             class="filter-btn whitespace-nowrap px-5 py-2 rounded-xl bg-border/10 text-[11px] font-black uppercase tracking-[0.15em] text-dim/60 transition-all hover:bg-border/30 hover:text-dim border border-transparent"
@@ -259,7 +286,7 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
                   {item.platform} • {item.label}
                 </div>
 
-                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' || item.type === 'raindrop' ? (
+                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' || item.type === 'raindrop' || item.type === 'github-star' ? (
                   <>
                     <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
                     {item.recommendation && (
