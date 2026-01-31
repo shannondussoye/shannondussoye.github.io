@@ -1,6 +1,5 @@
 ---
-import { getCollection } from "astro:content";
-import { XMLParser } from "fast-xml-parser";
+import { getUnifiedFeed } from "@/utils/getUnifiedFeed";
 import IconMail from "@/assets/icons/IconMail.svg";
 import IconCloud from "@/assets/icons/IconMenuDeep.svg"; 
 import IconZap from "@/assets/icons/IconArchive.svg"; 
@@ -10,234 +9,19 @@ import IconEdit from "@/assets/icons/IconEdit.svg";
 import IconGlobe from "@/assets/icons/IconGlobe.svg";
 import IconGitHub from "@/assets/icons/IconGitHub.svg";
 
-const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
-const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
-const HN_USERNAME = import.meta.env.PUBLIC_HN_USERNAME || "notrealrootuser";
-const RAINDROP_RSS_URL = import.meta.env.PUBLIC_RAINDROP_RSS_URL || "https://bg.raindrop.io/rss/public/66293279";
-const GITHUB_USERNAME = "shannondussoye";
+// 1. FETCH THE UNIFIED FEED
+const activityItems = await getUnifiedFeed(25);
 
-// Initialize the stream
-let activityItems: any[] = [];
-
-// 1. ATTEMPT LIVE BLUESKY FETCH
-try {
-  const bskyResponse = await fetch(
-    `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${BLUESKY_HANDLE}&limit=10`
-  );
-  
-  if (bskyResponse.ok) {
-    const data = await bskyResponse.json();
-    const bskyItems = data.feed.map((item: any) => {
-      const post = item.post;
-      return {
-        type: "bluesky",
-        platform: "Bluesky",
-        label: "Post",
-        text: post.record.text,
-        date: new Date(post.indexedAt).getTime(),
-        displayDate: new Date(post.indexedAt).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric'
-        }),
-        color: "text-[#0085ff]",
-        icon: IconCloud,
-        link: `https://bsky.app/profile/${post.author.handle}/post/${post.uri.split('/').pop()}`
-      };
-    });
-    activityItems = [...activityItems, ...bskyItems];
-  }
-} catch (e) {
-  console.error("Bluesky fetch failed.");
-}
-
-// 2. ATTEMPT LIVE SUBSTACK FETCH
-try {
-  const ssResponse = await fetch(SUBSTACK_URL);
-  if (ssResponse.ok) {
-    const xmlData = await ssResponse.text();
-    const parser = new XMLParser();
-    const jsonObj = parser.parse(xmlData);
-    const items = jsonObj.rss?.channel?.item;
-    
-    if (items) {
-      const itemsList = Array.isArray(items) ? items : [items];
-      const ssItems = itemsList.slice(0, 3).map((item: any) => {
-        const summary = item.description 
-          ? item.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...'
-          : "";
-        return {
-          type: "substack",
-          platform: "Substack",
-          label: "Article",
-          title: item.title,
-          recommendation: summary,
-          date: new Date(item.pubDate).getTime(),
-          displayDate: new Date(item.pubDate).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric'
-          }),
-          color: "text-[#ff6719]",
-          icon: IconMail,
-          link: item.link
-        };
-      });
-      activityItems = [...activityItems, ...ssItems];
-    }
-  }
-} catch (e) {
-  // Silent fail
-}
-
-// 3. ATTEMPT HN FETCH
-try {
-  const hnUserResponse = await fetch(`https://hacker-news.firebaseio.com/v0/user/${HN_USERNAME}.json`);
-  if (hnUserResponse.ok) {
-    const userData = await hnUserResponse.json();
-    if (userData.submitted) {
-      const topSubmissions = userData.submitted.slice(0, 5);
-      const hnItems = await Promise.all(
-        topSubmissions.map(async (id: number) => {
-          const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
-          const item = await itemRes.json();
-          return {
-            type: "hackernews",
-            platform: "Hacker News",
-            label: item.type === "comment" ? "Comment" : "Story",
-            title: item.title || (item.text ? item.text.substring(0, 100) + "..." : "HN Interaction"),
-            date: item.time * 1000,
-            displayDate: new Date(item.time * 1000).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric'
-            }),
-            color: "text-[#fb651e]",
-            icon: IconGlobe,
-            link: `https://news.ycombinator.com/item?id=${id}`
-          };
-        })
-      );
-      activityItems = [...activityItems, ...hnItems];
-    }
-  }
-} catch (e) {
-  // Silent fail
-}
-
-// 4. ATTEMPT RAINDROP FETCH
-try {
-  const rdResponse = await fetch(RAINDROP_RSS_URL);
-  if (rdResponse.ok) {
-    const xmlData = await rdResponse.text();
-    const parser = new XMLParser();
-    const jsonObj = parser.parse(xmlData);
-    const items = jsonObj.rss?.channel?.item;
-    
-    if (items) {
-      const itemsList = Array.isArray(items) ? items : [items];
-      const rdItems = itemsList.slice(0, 10).map((item: any) => {
-        return {
-          type: "raindrop",
-          platform: "Reading",
-          category: "reading",
-          label: "Bookmark",
-          title: item.title,
-          recommendation: item.description ? item.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...' : "",
-          date: new Date(item.pubDate).getTime(),
-          displayDate: new Date(item.pubDate).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric'
-          }),
-          color: "text-blue-400",
-          icon: IconGlobe,
-          link: item.link
-        };
-      });
-      activityItems = [...activityItems, ...rdItems];
-    }
-  }
-} catch (e) {
-  // Silent fail
-}
-
-// 5. ATTEMPT GITHUB STARS FETCH
-try {
-  const ghResponse = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/starred?per_page=10`, {
-    headers: {
-      'Accept': 'application/vnd.github.v3.star+json'
-    }
-  });
-  if (ghResponse.ok) {
-    const data = await ghResponse.json();
-    const ghItems = data.map((item: any) => ({
-      type: "github-star",
-      platform: "GitHub",
-      category: "stars",
-      label: "Star",
-      title: item.repo.full_name,
-      recommendation: item.repo.description,
-      date: new Date(item.starred_at).getTime(),
-      displayDate: new Date(item.starred_at).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric'
-      }),
-      color: "text-purple-400",
-      icon: IconGitHub,
-      link: item.repo.html_url
-    }));
-    activityItems = [...activityItems, ...ghItems];
-  }
-} catch (e) {
-  // Silent fail
-}
-
-// 6. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
-const internalBlogPosts = await getCollection("blog", ({ data }) => !data.draft);
-const blogItems = internalBlogPosts.map(post => ({
-  type: "blog",
-  platform: "Writing",
-  category: "writing",
-  label: "Post",
-  title: post.data.title,
-  recommendation: post.data.description,
-  date: post.data.pubDatetime.getTime(),
-  displayDate: post.data.pubDatetime.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric'
-  }),
-  color: "text-accent",
-  icon: IconEdit,
-  link: `/posts/${post.id}/`
-}));
-
-const workshopEntries = await getCollection("workshop", ({ data }) => !data.draft);
-const workshopItems = workshopEntries.map(entry => ({
-  type: "workshop",
-  platform: "Workshop",
-  category: "workshop",
-  label: "Project",
-  title: entry.data.title,
-  recommendation: entry.data.description,
-  date: entry.data.pubDatetime.getTime(),
-  displayDate: entry.data.pubDatetime.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric'
-  }),
-  color: "text-yellow-500",
-  icon: IconSparkles,
-  link: "/workshop/"
-}));
-
-// Add categories to existing items
-const bskyItemsWithCat = activityItems.filter(i => i.type === "bluesky").map(i => ({...i, category: "social"}));
-const ssItemsWithCat = activityItems.filter(i => i.type === "substack").map(i => ({...i, category: "writing"}));
-const hnItemsWithCat = activityItems.filter(i => i.type === "hackernews").map(i => ({...i, category: "social"}));
-const rdItemsWithCat = activityItems.filter(i => i.type === "raindrop"); // already has category
-const ghItemsWithCat = activityItems.filter(i => i.type === "github-star"); // already has category
-
-activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...rdItemsWithCat, ...ghItemsWithCat, ...blogItems, ...workshopItems];
-
-// Final Sort & Cap
-activityItems.sort((a, b) => b.date - a.date);
-activityItems = activityItems.slice(0, 25); // Cap at 25 most recent
+// 2. MAP ICONS TO TYPES
+const ICON_MAP: Record<string, any> = {
+  bluesky: IconCloud,
+  substack: IconMail,
+  hackernews: IconGlobe,
+  raindrop: IconGlobe,
+  "github-star": IconGitHub,
+  blog: IconEdit,
+  workshop: IconSparkles
+};
 ---
 
 <section id="recent-activity" class="pt-12 pb-6 mt-4">
@@ -276,45 +60,48 @@ activityItems = activityItems.slice(0, 25); // Cap at 25 most recent
     {activityItems.length > 0 ? (
       <div class="rounded-3xl border border-border bg-theme-card/30 backdrop-blur-xl overflow-hidden shadow-2xl">
         <div class="max-h-[600px] overflow-y-auto custom-scrollbar" id="activity-feed">
-          {activityItems.map((item) => (
-            <a 
-              href={item.link} 
-              target={item.link.startsWith('http') ? "_blank" : "_self"}
-              rel={item.link.startsWith('http') ? "noopener noreferrer" : ""} 
-              data-category={item.category}
-              class="activity-item flex gap-4 p-6 border-b border-border/50 last:border-0 hover:bg-white/5 transition-all duration-300 group/item block"
-            >
-              <div class={`flex-shrink-0 w-10 h-10 rounded-xl bg-border/20 flex items-center justify-center ${item.color} group-hover/item:scale-110 transition-transform`}>
-                <item.icon class="w-5 h-5" />
-              </div>
-
-              <div class="flex-grow">
-                <div class={`text-[10px] font-black uppercase tracking-widest mb-1 ${item.color}`}>
-                  {item.platform} • {item.label}
+          {activityItems.map((item) => {
+            const Icon = ICON_MAP[item.type] || IconGlobe;
+            return (
+              <a 
+                href={item.link} 
+                target={item.link.startsWith('http') ? "_blank" : "_self"}
+                rel={item.link.startsWith('http') ? "noopener noreferrer" : ""} 
+                data-category={item.category}
+                class="activity-item flex gap-4 p-6 border-b border-border/50 last:border-0 hover:bg-white/5 transition-all duration-300 group/item block"
+              >
+                <div class={`flex-shrink-0 w-10 h-10 rounded-xl bg-border/20 flex items-center justify-center ${item.color} group-hover/item:scale-110 transition-transform`}>
+                  <Icon class="w-5 h-5" />
                 </div>
 
-                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' || item.type === 'raindrop' || item.type === 'github-star' ? (
-                  <>
-                    <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
-                    {item.recommendation && (
-                      <div class="text-sm text-dim italic border-l-2 border-border pl-4 my-3">
-                        "{item.recommendation}"
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div class="text-base text-main/90 leading-relaxed mb-3 whitespace-pre-wrap">
-                    {item.text}
+                <div class="flex-grow">
+                  <div class={`text-[10px] font-black uppercase tracking-widest mb-1 ${item.color}`}>
+                    {item.platform} • {item.label}
                   </div>
-                )}
 
-                <div class="flex justify-between items-center text-xs text-dim">
-                  <span>{item.displayDate}</span>
-                  <IconExternal class="w-4 h-4 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-1 transition-all" />
+                  {item.type !== 'bluesky' ? (
+                    <>
+                      <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
+                      {item.recommendation && (
+                        <div class="text-sm text-dim italic border-l-2 border-border pl-4 my-3">
+                          "{item.recommendation}"
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div class="text-base text-main/90 leading-relaxed mb-3 whitespace-pre-wrap">
+                      {item.text}
+                    </div>
+                  )}
+
+                  <div class="flex justify-between items-center text-xs text-dim">
+                    <span>{item.displayDate}</span>
+                    <IconExternal class="w-4 h-4 opacity-0 group-hover/item:opacity-100 group-hover/item:translate-x-1 transition-all" />
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            );
+          })}
         </div>
       </div>
     ) : (

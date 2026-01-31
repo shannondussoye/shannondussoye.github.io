@@ -1,10 +1,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  # Trigger the workflow every time you push to the `main` branch
-  # Using a different branch name? Replace `main` with your branch’s name
+  # Trigger the workflow every time you push to the `master` branch
   push:
     branches: [master]
+  # Rebuild every 12 hours to refresh the Digital Pulse
+  schedule:
+    - cron: '0 */12 * * *'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
