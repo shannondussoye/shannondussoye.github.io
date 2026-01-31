@@ -9,6 +9,9 @@ import IconArchive from "@/assets/icons/IconArchive.svg";
 import LinkButton from "./LinkButton.astro";
 import { SITE } from "@/config";
 
+import IconGlobe from "@/assets/icons/IconGlobe.svg";
+import IconSparkles from "@/assets/icons/IconSparkles.svg";
+
 const { pathname } = Astro.url;
 
 // Remove trailing slash from current pathname if exists
@@ -32,20 +35,20 @@ const isActive = (path: string) => {
 </a>
 
 <header
-  class="app-layout flex flex-col items-center justify-between sm:flex-row"
+  class="fixed top-0 z-50 w-full transition-all duration-300"
+  id="main-header"
 >
   <div
     id="top-nav-wrap"
     class:list={[
-      "py-4 sm:py-6",
-      "border-b border-border",
-      "relative w-full bg-background",
+      "mx-auto max-w-app px-4 py-4 sm:py-6",
+      "transition-all duration-300",
       "flex items-baseline justify-between sm:items-center",
     ]}
   >
     <a
       href="/"
-      class="absolute py-1 text-xl leading-8 font-semibold whitespace-nowrap sm:static sm:my-auto sm:text-2xl sm:leading-none"
+      class="py-1 text-xl leading-8 font-semibold whitespace-nowrap sm:static sm:my-auto sm:text-2xl sm:leading-none"
     >
       {SITE.title}
     </a>
@@ -83,27 +86,38 @@ const isActive = (path: string) => {
             About
           </a>
         </li>
-        {
-          SITE.showArchives && (
-            <li class="col-span-2">
-              <LinkButton
-                href="/archives"
-                class:list={[
-                  "focus-outline flex justify-center p-3 sm:p-1",
-                  {
-                    "active-nav [&>svg]:stroke-accent": isActive("/archives"),
-                  },
-                ]}
-                title="Archives"
-                aria-label="archives"
-              >
-                <IconArchive class="hidden sm:inline-block" />
-                <span class="sm:sr-only">Archives</span>
-              </LinkButton>
-            </li>
-          )
-        }
-        <li class="col-span-1 flex items-center justify-center">
+
+        <!-- Start Utility Icons Group -->
+        <li class="col-span-1 flex items-center justify-center border-t border-border pt-2 mt-2 sm:border-0 sm:pt-0 sm:mt-0">
+          <LinkButton
+            href="/workshop"
+            class:list={[
+              "focus-outline flex p-3 sm:p-1",
+              { "[&>svg]:stroke-accent": isActive("/workshop") },
+            ]}
+            title="Workshop"
+            aria-label="workshop"
+          >
+            <IconSparkles />
+            <span class="sr-only">Workshop</span>
+          </LinkButton>
+        </li>
+        <li class="col-span-1 flex items-center justify-center border-t border-border pt-2 mt-2 sm:border-0 sm:pt-0 sm:mt-0">
+          <LinkButton
+            href="/atlas"
+            class:list={[
+              "focus-outline flex p-3 sm:p-1",
+              { "[&>svg]:stroke-accent": isActive("/atlas") },
+            ]}
+            title="Atlas"
+            aria-label="atlas"
+          >
+            <IconGlobe />
+            <span class="sr-only">Atlas</span>
+          </LinkButton>
+        </li>
+
+        <li class="col-span-1 flex items-center justify-center sm:border-l sm:border-border sm:ml-2 sm:pl-4">
           <LinkButton
             href="/search"
             class:list={[
@@ -137,6 +151,45 @@ const isActive = (path: string) => {
     </nav>
   </div>
 </header>
+
+<style>
+  #main-header.scrolled {
+    border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 50%);
+    background-color: color-mix(in srgb, var(--background), transparent 20%);
+    backdrop-filter: blur(12px);
+  }
+  #main-header.scrolled #top-nav-wrap {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    #main-header.scrolled #top-nav-wrap {
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+  }
+</style>
+
+<script>
+  function setupHeader() {
+    const header = document.querySelector("#main-header");
+    if (!header) return;
+
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        header.classList.add("scrolled");
+      } else {
+        header.classList.remove("scrolled");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial check
+  }
+
+  setupHeader();
+  document.addEventListener("astro:after-swap", setupHeader);
+</script>
 
 <script>
   function toggleNav() {

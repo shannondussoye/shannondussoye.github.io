@@ -39,7 +39,7 @@ html[data-theme="dark"] {
     @apply overflow-y-scroll scroll-smooth;
   }
   body {
-    @apply flex min-h-svh flex-col bg-background font-app text-foreground selection:bg-accent/75 selection:text-background;
+    @apply flex min-h-svh flex-col bg-background pt-16 font-app text-foreground selection:bg-accent/75 selection:text-background sm:pt-20;
   }
   a,
   button {

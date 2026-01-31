@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Atlas: 3D Rebirth - Design Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="//unpkg.com/globe.gl"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent-travel: #38bdf8;
+            --accent-food: #f471b5;
+            --text-main: #f8fafc;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        #globeViz {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        /* UI Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .header {
+            pointer-events: auto;
+            max-width: 400px;
+        }
+
+        .branding h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 1.5rem;
+        }
+
+        .filter-btn {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 14px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        .filter-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+
+        /* The Polaroid Card */
+        #polaroid {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            background: white;
+            padding: 10px 10px 20px 10px;
+            width: 200px;
+            border-radius: 4px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            transform: translate(20px, 20px);
+        }
+
+        #polaroid img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border-radius: 2px;
+            margin-bottom: 12px;
+            background: #f1f5f9;
+        }
+
+        .polaroid-content h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .polaroid-content p {
+            margin: 4px 0 0 0;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        /* Help hint at bottom */
+        .hint {
+            margin-top: auto;
+            color: #475569;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="globeViz"></div>
+
+    <div class="overlay">
+        <div class="header">
+            <div class="branding">
+                <h1>The Atlas</h1>
+                <p style="color: #64748b; margin-top: 8px; font-size: 1.1rem;">A 3D log of every track, taste, and
+                    trail.</p>
+            </div>
+            <div class="filters">
+                <button class="filter-btn active" onclick="updateFilter('all', this)">
+                    All Points
+                </button>
+                <button class="filter-btn" onclick="updateFilter('travel', this)">
+                    <i data-lucide="plane" size="14"></i> Travel
+                </button>
+                <button class="filter-btn" onclick="updateFilter('food', this)">
+                    <i data-lucide="utensils" size="14"></i> Dining
+                </button>
+            </div>
+        </div>
+        <div class="hint">Click and drag to rotate // Scroll to zoom</div>
+    </div>
+
+    <!-- Polaroid Component -->
+    <div id="polaroid">
+        <img id="p-img" src="" />
+        <div class="polaroid-content">
+            <h3 id="p-title"></h3>
+            <p id="p-desc"></p>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // 1. DATA SET
+        const locations = [
+            { lat: 35.6762, lng: 139.6503, type: 'travel', title: 'Tokyo', desc: 'Neon lights and quiet shrines.', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=400&h=400&auto=format&fit=crop' },
+            { lat: 48.8566, lng: 2.3522, type: 'travel', title: 'Paris', desc: 'Midnight walks along the Seine.', img: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=400&h=400&auto=format&fit=crop' },
+            { lat: -33.8688, lng: 151.2093, type: 'food', title: 'Sydney', desc: 'Modern dining by the Opera House.', img: 'https://images.unsplash.com/photo-1550966842-2847a46c3182?q=80&w=400&h=400&auto=format&fit=crop' },
+            { lat: 40.7128, lng: -74.0060, type: 'food', title: 'New York', desc: 'The best pastrami in the lower east side.', img: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?q=80&w=400&h=400&auto=format&fit=crop' },
+            { lat: -23.5505, lng: -46.6333, type: 'travel', title: 'São Paulo', desc: 'Urban art and brutalist curves.', img: 'https://images.unsplash.com/photo-1543059152-42b3a96938e5?q=80&w=400&h=400&auto=format&fit=crop' }
+        ];
+
+        // 2. INITIALIZE GLOBE
+        const world = Globe()
+            (document.getElementById('globeViz'))
+            .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+            .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+            .showAtmosphere(true)
+            .atmosphereColor('#38bdf8')
+            .atmosphereDaylightAlpha(0.1)
+            // Point Styling
+            .pointsData(locations)
+            .pointLat('lat')
+            .pointLng('lng')
+            .pointColor(d => d.type === 'travel' ? '#38bdf8' : '#f471b5')
+            .pointRadius(0.8)
+            .pointAltitude(0.05)
+            .pointsTransitionDuration(1000)
+            // Interaction Logic
+            .onPointHover(point => {
+                const pol = document.getElementById('polaroid');
+                if (point) {
+                    document.getElementById('p-title').innerText = point.title;
+                    document.getElementById('p-desc').innerText = point.desc;
+                    document.getElementById('p-img').src = point.img;
+                    pol.style.display = 'block';
+                    setTimeout(() => pol.style.opacity = '1', 10);
+                } else {
+                    pol.style.opacity = '0';
+                    setTimeout(() => pol.style.display = 'none', 300);
+                }
+            })
+            .onPointClick(point => {
+                // Zoom precisely to clicking point
+                world.pointOfView({ lat: point.lat, lng: point.lng, altitude: 0.6 }, 1000);
+            });
+
+        // 3. MOUSE TRACKING FOR POLAROID
+        window.addEventListener('mousemove', e => {
+            const pol = document.getElementById('polaroid');
+            if (pol.style.display === 'block') {
+                pol.style.left = (e.clientX + 20) + 'px';
+                pol.style.top = (e.clientY + 20) + 'px';
+            }
+        });
+
+        // 4. FILTER FUNCTION (EXPLICITLY DEFINED)
+        window.updateFilter = function(category, el) {
+            // UI Toggle
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            el.classList.add('active');
+
+            // Data Toggle
+            if (category === 'all') {
+                world.pointsData(locations);
+            } else {
+                const filtered = locations.filter(l => l.type === category);
+                world.pointsData(filtered);
+            }
+        };
+
+        // 5. AUTO ROTATION START
+        world.controls().autoRotate = true;
+        world.controls().autoRotateSpeed = 0.5;
+
+        // Stop auto-rotate on interaction
+        world.controls().addEventListener('start', () => {
+            world.controls().autoRotate = false;
+        });
+
+        // Focus on Tokyo after a short delay
+        setTimeout(() => {
+            world.pointOfView({ lat: 35, lng: 139, altitude: 2 }, 2000);
+        }, 1000);
+
+    </script>
+</body>
+
+</html>

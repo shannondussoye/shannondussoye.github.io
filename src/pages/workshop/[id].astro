@@ -1,0 +1,20 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content";
+import WorkshopDetails from "@/layouts/WorkshopDetails.astro";
+
+export async function getStaticPaths() {
+  const items = await getCollection("workshop", ({ data }) => !data.draft);
+  return items.map(item => ({
+    params: { id: item.id },
+    props: { item },
+  }));
+}
+
+type Props = {
+  item: CollectionEntry<"workshop">;
+};
+
+const { item } = Astro.props;
+---
+
+<WorkshopDetails item={item} />

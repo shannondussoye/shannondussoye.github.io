@@ -1,0 +1,22 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/layouts/Main.astro";
+import { SITE } from "@/config";
+---
+
+<Layout title={`Atlas | ${SITE.title}`}>
+  <Header />
+  <Main pageTitle="Atlas" pageDesc="A digital archive of my travels and memories.">
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+       <div class="mb-4 text-4xl animate-pulse">🌍</div>
+       <h2 class="text-xl font-semibold">Map implementation coming soon</h2>
+       <p class="text-foreground/60 mt-2 max-w-sm">
+         Preparing the 3D globe and memory scroll experience...
+       </p>
+       <a href="/" class="mt-8 text-accent hover:underline">Return Home</a>
+    </div>
+  </Main>
+  <Footer />
+</Layout>

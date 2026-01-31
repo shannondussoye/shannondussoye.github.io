@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curated Stuff - Deep Dive Layout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.4);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #2dd4bf;
+            --text-main: #f9fafb;
+            --text-dim: #9ca3af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 5rem 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            transition: filter 0.5s ease;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            overflow: hidden;
+            cursor: pointer;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .card img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* OVERLAY SHORT FORM READING VIEW */
+        .reader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 10000;
+            display: none;
+            overflow-y: auto;
+            padding: 5rem 2rem;
+        }
+
+        .reader-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .reader-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 100px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .post-hero-img {
+            width: 100%;
+            height: 450px;
+            object-fit: cover;
+            border-radius: 40px;
+            margin-bottom: 3rem;
+        }
+
+        .post-meta {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .post-title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            margin-bottom: 2rem;
+        }
+
+        .post-content {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            color: #d1d5db;
+        }
+
+        .post-content b {
+            color: white;
+        }
+
+        .short-specs {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            margin: 3rem 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .spec-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .spec-item p {
+            font-weight: 700;
+        }
+
+        .logic-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body id="body">
+
+    <div class="container" id="main-grid">
+        <header style="margin-bottom: 3rem;">
+            <h1 style="font-size: 3.5rem;">The Workshop</h1>
+            <p style="color: var(--text-dim); font-size: 1.25rem;">Short-form notes on tools, gear, and digital finds.
+            </p>
+        </header>
+
+        <div class="bento-grid">
+            <div class="card"
+                onclick="openReader('Leatherman ARC', 'Precision multi-tool featuring MagnaCut steel.', 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=1200', 'Hard Tools')">
+                <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=400" />
+                <div>
+                    <h2 id="card-title">Leatherman ARC</h2>
+                    <p style="color: var(--text-dim); font-size: 0.9rem;">The Workhorse Multi-tool.</p>
+                </div>
+            </div>
+
+            <div class="card"
+                onclick="openReader('Beta LT Shell', 'The ultimate lightweight weather protection.', 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200', 'Apparel')">
+                <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400" />
+                <div>
+                    <h2>Arc\'teryx Beta LT</h2>
+                    <p style="color: var(--text-dim); font-size: 0.9rem;">GORE-TEX Essential.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHORT FORM READER VIEW -->
+    <div class="reader-overlay" id="reader">
+        <div class="reader-container">
+            <div class="reader-header">
+                <button class="btn-back" onclick="closeReader()"><i data-lucide="arrow-left"></i> Back to Grid</button>
+                <div style="font-family: 'JetBrains Mono'; font-size: 0.8rem; opacity: 0.5;">READING: <span
+                        id="r-type"></span></div>
+            </div>
+
+            <img id="r-img" class="post-hero-img" src="" />
+
+            <div class="post-body">
+                <span class="post-meta" id="r-meta">UTILITY // FIELD NOTES</span>
+                <h1 class="post-title" id="r-title"></h1>
+
+                <div class="post-content">
+                    <p>This isn't a replacement for a full review, but a <b>quick capture</b> of why this item has
+                        stayed in my rotation. Most gear fails after a week of real-world use; this didn't.</p>
+
+                    <div class="short-specs">
+                        <div class="spec-item">
+                            <span>Primary Use</span>
+                            <p id="s-use">Everyday Carry / Technical Repair</p>
+                        </div>
+                        <div class="spec-item">
+                            <span>Key Stat</span>
+                            <p id="s-stat">MagnaCut Steel Blade</p>
+                        </div>
+                        <div class="spec-item">
+                            <span>Durability</span>
+                            <p>9.5 / 10</p>
+                        </div>
+                        <div class="spec-item">
+                            <span>Vibe Check</span>
+                            <p>Industrial / Premium</p>
+                        </div>
+                    </div>
+
+                    <p>It's about the <b>tactile feedback</b>. When you interact with something a hundred times a day,
+                        the small friction points matter. This design removes those friction points and replaces them
+                        with a satisfying 'click'.</p>
+                </div>
+
+                <div
+                    style="margin-top: 5rem; padding: 2rem; background: var(--card-bg); border-radius: 24px; text-align: center;">
+                    <p style="font-size: 1rem; color: white;">Want to see more details?</p>
+                    <button
+                        style="margin-top: 1rem; padding: 1rem 2rem; border-radius: 12px; border: none; background: var(--accent); color: black; font-weight: 800; cursor: pointer;">External
+                        Source →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function openReader(title, desc, img, type) {
+            document.getElementById('r-title').innerText = title;
+            document.getElementById('r-img').src = img;
+            document.getElementById('r-type').innerText = type.toUpperCase();
+
+            const reader = document.getElementById('reader');
+            reader.style.display = 'block';
+            document.body.classList.add('logic-open');
+        }
+
+        function closeReader() {
+            document.getElementById('reader').style.display = 'none';
+            document.body.classList.remove('logic-open');
+        }
+    </script>
+</body>
+
+</html>
