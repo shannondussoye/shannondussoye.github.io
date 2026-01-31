@@ -4,7 +4,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import { SITE } from "@/config";
 
-const memories = (await getCollection("atlas", ({ data }) => !data.draft)) as any[];
+const memories = (await getCollection("atlas" as any, ({ data }: any) => !data.draft)) as any[];
 const sortedMemories = memories.sort(
   (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
 );
@@ -73,7 +73,7 @@ const years = Object.keys(groupedMemories).sort((a, b) => Number(b) - Number(a))
                 <h2 class="text-3xl font-black uppercase tracking-tight text-accent/90 leading-none">{month}</h2>
               </div>
 
-              {groupedMemories[Number(year)][month].map((memory, index) => (
+              {groupedMemories[Number(year)][month].map((memory: any, index: number) => (
                 <div 
                   class="atlas-card group mb-32 last:mb-0 opacity-20 filter grayscale transition-all duration-[800ms] scale-95"
                   data-lat={memory.data.coordinates[0]}
