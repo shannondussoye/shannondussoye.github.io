@@ -11,7 +11,7 @@ import IconGlobe from "@/assets/icons/IconGlobe.svg";
 
 const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
 const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
-const HN_USERNAME = "shannondussoye"; // Placeholder, can be moved to env
+const HN_USERNAME = import.meta.env.PUBLIC_HN_USERNAME || "notrealrootuser";
 
 // Initialize the stream
 let activityItems: any[] = [];
