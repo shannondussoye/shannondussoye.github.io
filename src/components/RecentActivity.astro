@@ -12,6 +12,7 @@ import IconGlobe from "@/assets/icons/IconGlobe.svg";
 const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
 const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
 const HN_USERNAME = import.meta.env.PUBLIC_HN_USERNAME || "notrealrootuser";
+const RAINDROP_RSS_URL = import.meta.env.PUBLIC_RAINDROP_RSS_URL || "https://bg.raindrop.io/rss/public/66293279";
 
 // Initialize the stream
 let activityItems: any[] = [];
@@ -119,7 +120,43 @@ try {
   // Silent fail
 }
 
-// 4. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
+// 4. ATTEMPT RAINDROP FETCH
+try {
+  const rdResponse = await fetch(RAINDROP_RSS_URL);
+  if (rdResponse.ok) {
+    const xmlData = await rdResponse.text();
+    const parser = new XMLParser();
+    const jsonObj = parser.parse(xmlData);
+    const items = jsonObj.rss?.channel?.item;
+    
+    if (items) {
+      const itemsList = Array.isArray(items) ? items : [items];
+      const rdItems = itemsList.slice(0, 10).map((item: any) => {
+        return {
+          type: "raindrop",
+          platform: "Reading",
+          category: "reading",
+          label: "Bookmark",
+          title: item.title,
+          recommendation: item.description ? item.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...' : "",
+          date: new Date(item.pubDate).getTime(),
+          displayDate: new Date(item.pubDate).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric'
+          }),
+          color: "text-blue-400",
+          icon: IconGlobe,
+          link: item.link
+        };
+      });
+      activityItems = [...activityItems, ...rdItems];
+    }
+  }
+} catch (e) {
+  // Silent fail
+}
+
+// 5. ADD INTERNAL CONTENT (BLOG & WORKSHOP)
 const internalBlogPosts = await getCollection("blog", ({ data }) => !data.draft);
 const blogItems = internalBlogPosts.map(post => ({
   type: "blog",
@@ -160,8 +197,9 @@ const workshopItems = workshopEntries.map(entry => ({
 const bskyItemsWithCat = activityItems.filter(i => i.type === "bluesky").map(i => ({...i, category: "social"}));
 const ssItemsWithCat = activityItems.filter(i => i.type === "substack").map(i => ({...i, category: "writing"}));
 const hnItemsWithCat = activityItems.filter(i => i.type === "hackernews").map(i => ({...i, category: "social"}));
+const rdItemsWithCat = activityItems.filter(i => i.type === "raindrop"); // already has category
 
-activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...blogItems, ...workshopItems];
+activityItems = [...bskyItemsWithCat, ...ssItemsWithCat, ...hnItemsWithCat, ...rdItemsWithCat, ...blogItems, ...workshopItems];
 
 // Final Sort & Cap
 activityItems.sort((a, b) => b.date - a.date);
@@ -169,27 +207,34 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
 ---
 
 <section id="recent-activity" class="pt-12 pb-6 mt-4">
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-    <h2 class="text-2xl font-semibold tracking-wide flex items-center gap-3 text-main">
-      <IconZap class="w-6 h-6 text-accent" />
+  <div class="space-y-6 mb-10">
+    <h2 class="text-3xl font-bold tracking-tight flex items-center gap-3 text-main">
+      <IconZap class="w-7 h-7 text-accent" />
       Unified Digital Pulse
     </h2>
     
-    <div class="flex flex-wrap gap-2" id="filter-buttons">
-      <button 
-        data-filter="all" 
-        class="filter-btn active px-4 py-1.5 rounded-full bg-border/20 text-[10px] font-black uppercase tracking-widest text-dim transition-all hover:bg-border/40"
+    <div class="relative">
+      <div 
+        class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2" 
+        id="filter-buttons"
       >
-        All
-      </button>
-      {["Social", "Writing", "Workshop"].map(cat => (
         <button 
-          data-filter={cat.toLowerCase()} 
-          class="filter-btn px-4 py-1.5 rounded-full bg-border/10 text-[10px] font-black uppercase tracking-widest text-dim/60 transition-all hover:bg-border/30 hover:text-dim"
+          data-filter="all" 
+          class="filter-btn active whitespace-nowrap px-5 py-2 rounded-xl bg-border/20 text-[11px] font-black uppercase tracking-[0.15em] text-accent transition-all hover:bg-border/40 border border-transparent"
         >
-          {cat}
+          All
         </button>
-      ))}
+        {["Social", "Writing", "Workshop", "Reading"].map(cat => (
+          <button 
+            data-filter={cat.toLowerCase()} 
+            class="filter-btn whitespace-nowrap px-5 py-2 rounded-xl bg-border/10 text-[11px] font-black uppercase tracking-[0.15em] text-dim/60 transition-all hover:bg-border/30 hover:text-dim border border-transparent"
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+      <!-- Subtle Fade-out for scrolling -->
+      <div class="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-theme-bg to-transparent pointer-events-none md:hidden"></div>
     </div>
   </div>
 
@@ -214,7 +259,7 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
                   {item.platform} • {item.label}
                 </div>
 
-                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' ? (
+                {item.type === 'substack' || item.type === 'blog' || item.type === 'workshop' || item.type === 'hackernews' || item.type === 'raindrop' ? (
                   <>
                     <div class="text-base font-bold mb-1 leading-tight text-main">{item.title}</div>
                     {item.recommendation && (
@@ -257,10 +302,10 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
 
         // Update Button Styles
         buttons.forEach(b => {
-          b.classList.remove('active', 'bg-border/40', 'text-dim');
+          b.classList.remove('active', 'bg-border/40', 'text-accent');
           b.classList.add('bg-border/10', 'text-dim/60');
         });
-        btn.classList.add('active', 'bg-border/40', 'text-dim');
+        btn.classList.add('active', 'bg-border/40', 'text-accent');
         btn.classList.remove('bg-border/10', 'text-dim/60');
 
         // Filter Items
@@ -268,10 +313,16 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
           const category = item.getAttribute('data-category');
           if (filter === 'all' || category === filter) {
             (item as HTMLElement).style.display = 'flex';
-            (item as HTMLElement).style.opacity = '1';
+            setTimeout(() => {
+              (item as HTMLElement).style.opacity = '1';
+              (item as HTMLElement).style.transform = 'translateY(0)';
+            }, 10);
           } else {
-            (item as HTMLElement).style.display = 'none';
             (item as HTMLElement).style.opacity = '0';
+            (item as HTMLElement).style.transform = 'translateY(10px)';
+            setTimeout(() => {
+              (item as HTMLElement).style.display = 'none';
+            }, 300);
           }
         });
       });
@@ -284,13 +335,25 @@ activityItems = activityItems.slice(0, 20); // Cap at 20 most recent
 </script>
 
 <style>
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .filter-btn {
+    border: 1px solid transparent;
+  }
+
   .filter-btn.active {
-    box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.1);
-    border: 1px solid rgba(var(--color-accent-rgb), 0.2);
+    box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.15);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.3);
   }
 
   .activity-item {
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
