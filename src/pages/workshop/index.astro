@@ -1,97 +1,56 @@
 ---
-import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Main from "@/layouts/Main.astro";
+import LinkButton from "@/components/LinkButton.astro";
 import { SITE } from "@/config";
+import IconSparkles from "@/assets/icons/IconSparkles.svg";
 
-const items = await getCollection("workshop", ({ data }) => !data.draft);
-const sortedItems = items.sort(
-  (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
-);
+const title = "Workshop";
 ---
 
-<Layout title={`Workshop | ${SITE.title}`}>
+<Layout title={`${title} | ${SITE.title}`}>
   <Header />
-  <Main
-    pageTitle="Workshop"
-    pageDesc="A curated collection of tools, gear, and software I use daily."
+
+  <main
+    id="main-content"
+    class="app-layout flex flex-1 items-center justify-center min-h-[60vh]"
   >
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[300px]">
-      {
-        sortedItems.map((item, index) => {
-          const total = sortedItems.length;
-          
-          let spans = "md:col-span-1 md:row-span-1";
-          
-          if (total === 1) {
-            spans = "md:col-span-4 md:row-span-2";
-          } else if (total === 2) {
-            spans = "md:col-span-2 md:row-span-2";
-          } else if (total === 3) {
-            if (index === 0) spans = "md:col-span-2 md:row-span-2";
-            else spans = "md:col-span-2 md:row-span-1";
-          } else {
-            // Adaptive logic for 4+ items
-            const isWide = index % 4 === 0 || index % 4 === 3;
-            const isTall = index % 4 === 1;
-            spans = `${isWide ? "md:col-span-2" : "md:col-span-1"} ${isTall ? "md:row-span-2" : "md:row-span-1"}`;
-          }
-          
-          return (
-            <a
-              href={`/workshop/${item.id}/`}
-              class:list={[
-                "group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-background transition-all hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/5",
-                spans
-              ]}
-            >
-              {item.data.heroImage && (
-                <div class="absolute inset-0 z-0">
-                  <img
-                    src={item.data.heroImage}
-                    alt={item.data.title}
-                    class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 opacity-100"
-                  />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                </div>
-              )}
-              
-              <div class="relative z-10 flex flex-1 flex-col p-6">
-                <div class="mb-auto">
-                   <span class="rounded-full bg-accent/20 backdrop-blur-md border border-accent/20 px-3 py-1 text-[10px] font-bold tracking-widest text-accent uppercase">
-                    {item.data.category || "Gear"}
-                  </span>
-                </div>
+    <div class="flex flex-col items-center justify-center text-center px-4">
+      <div class="w-16 h-16 rounded-3xl bg-accent/10 flex items-center justify-center mb-8 animate-pulse">
+        <IconSparkles class="w-8 h-8 text-accent" />
+      </div>
+      
+      <h1 class="text-4xl sm:text-5xl font-bold text-main mb-4 tracking-tight">
+        The {title}
+      </h1>
+      
+      <p class="text-dim/80 text-lg max-w-md mb-10 leading-relaxed">
+        My experimental projects, tools, and technical prototypes are currently being reorganized for a better experience.
+      </p>
 
-                <div class="mt-4">
-                  <h2 class="text-xl font-bold tracking-tight text-white group-hover:text-accent leading-tight">
-                    {item.data.title}
-                  </h2>
-                  <p class="mt-2 text-xs leading-relaxed text-slate-200 line-clamp-2">
-                    {item.data.description}
-                  </p>
-                </div>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <LinkButton
+          href="/"
+          class="px-8 py-3 rounded-2xl bg-accent text-white font-bold hover:scale-105 transition-transform"
+        >
+          Return Home
+        </LinkButton>
+        <LinkButton
+          href="/posts"
+          class="px-8 py-3 rounded-2xl bg-border/20 text-main font-bold hover:bg-border/40 transition-all border border-border/50"
+        >
+          Read Blog
+        </LinkButton>
+      </div>
 
-                <div class="mt-4 flex items-center justify-between">
-                   <div class="flex gap-1">
-                    {item.data.tags.slice(0, 2).map(tag => (
-                      <span class="text-[9px] text-white/50 font-medium bg-white/5 px-2 py-0.5 rounded border border-white/10">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                  <span class="text-[10px] text-white/40 font-mono">
-                    {item.data.pubDatetime.toLocaleDateString("en-US", { year: 'numeric' })}
-                  </span>
-                </div>
-              </div>
-            </a>
-          );
-        })
-      }
+      <div class="mt-16 pt-8 border-t border-border/50 w-full max-w-sm">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-dim/40 italic">
+          Building in public, slowly...
+        </p>
+      </div>
     </div>
-  </Main>
+  </main>
+
   <Footer />
 </Layout>
