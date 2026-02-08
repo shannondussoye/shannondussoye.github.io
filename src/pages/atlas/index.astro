@@ -1,56 +1,646 @@
 ---
+import { getCollection, render } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Footer from "@/components/Footer.astro";
-import LinkButton from "@/components/LinkButton.astro";
 import { SITE } from "@/config";
-import IconGlobe from "@/assets/icons/IconGlobe.svg";
 
-const title = "Atlas";
+const memories = (await getCollection("atlas" as any, ({ data }: any) => !data.draft)) as any[];
+
+const memoriesWithContent = await Promise.all(
+  memories.map(async memory => {
+    const { Content } = await render(memory);
+    return { ...memory, Content };
+  })
+);
+
+// 1. Group individual entries into trips
+const tripsMap = memoriesWithContent.reduce((acc, memory) => {
+  const tripName = memory.data.trip;
+  if (tripName) {
+    if (!acc[tripName]) acc[tripName] = [];
+    acc[tripName].push(memory);
+  }
+  return acc;
+}, {} as Record<string, any[]>);
+
+// 2. Process trips: sort chronologically and inject summary cards
+const tripUnits = (Object.entries(tripsMap) as [string, any[]][]).map(([name, stops]) => {
+  const chronologicalStops = stops.sort((a: any, b: any) => a.data.pubDatetime.getTime() - b.data.pubDatetime.getTime());
+  
+  // Entire trip block is sorted by its LAST stop in the main feed
+  const tripEndDate = chronologicalStops[chronologicalStops.length - 1].data.pubDatetime;
+  
+  // Collect the first image from each stop for the summary highlight reel
+  const tripHighlightImages = chronologicalStops
+    .map(stop => stop.data.images?.[0])
+    .filter(Boolean);
+
+  // Look for a custom intro in any of the trip stops (prioritizing the first stop)
+  const customIntro = chronologicalStops.find(stop => stop.data.tripDescription)?.data.tripDescription;
+
+  const tripSummary = {
+    isSummary: true,
+    data: {
+      ...chronologicalStops[0].data,
+      title: name,
+      location: `${chronologicalStops.length} locations`,
+      category: 'journey',
+      trip: name,
+      images: tripHighlightImages,
+      tripDescription: customIntro, // Pass custom intro to card data
+    }
+  };
+
+  return {
+    latestDate: tripEndDate,
+    entries: [tripSummary, ...chronologicalStops]
+  };
+});
+
+// 3. Process standalone entries (non-trip)
+const standaloneUnits = memoriesWithContent
+  .filter(m => !m.data.trip)
+  .map(m => ({
+    latestDate: m.data.pubDatetime,
+    entries: [m]
+  }));
+
+// 4. Merge trips and standalones, then sort the entire feed reverse-chronologically
+const sortedFeedItems = [...tripUnits, ...standaloneUnits]
+  .sort((a, b) => b.latestDate.getTime() - a.latestDate.getTime())
+  .flatMap(unit => unit.entries);
+
+// 5. Final grouping by Year/Month for the scrollytelling UI
+const groupedMemories = sortedFeedItems.reduce((acc, entry) => {
+  const year = entry.data.pubDatetime.getFullYear();
+  const month = entry.data.pubDatetime.toLocaleString('en-US', { month: 'long' });
+  
+  if (!acc[year]) acc[year] = {};
+  if (!acc[year][month]) acc[year][month] = [];
+  
+  acc[year][month].push(entry);
+  return acc;
+}, {} as Record<number, Record<string, any[]>>);
+
+const sortedYears = Object.keys(groupedMemories).sort((a, b) => Number(b) - Number(a));
 ---
 
-<Layout title={`${title} | ${SITE.title}`}>
+<Layout title={`Atlas | ${SITE.title}`}>
   <Header />
-
-  <main
-    id="main-content"
-    class="app-layout flex flex-1 items-center justify-center min-h-[60vh]"
-  >
-    <div class="flex flex-col items-center justify-center text-center px-4">
-      <div class="w-16 h-16 rounded-3xl bg-accent/10 flex items-center justify-center mb-8 animate-pulse">
-        <IconGlobe class="w-8 h-8 text-accent" />
-      </div>
-      
-      <h1 class="text-4xl sm:text-5xl font-bold text-main mb-4 tracking-tight">
-        {title} Explorations
-      </h1>
-      
-      <p class="text-dim/80 text-lg max-w-md mb-10 leading-relaxed">
-        My personal "Atlas" of memories and geolocation data is currently being re-mapped. Stay tuned for an interactive journey.
-      </p>
-
-      <div class="flex flex-col sm:flex-row gap-4">
-        <LinkButton
-          href="/"
-          class="px-8 py-3 rounded-2xl bg-accent text-white font-bold hover:scale-105 transition-transform"
-        >
-          Return Home
-        </LinkButton>
-        <LinkButton
-          href="/posts"
-          class="px-8 py-3 rounded-2xl bg-border/20 text-main font-bold hover:bg-border/40 transition-all border border-border/50"
-        >
-          Read Blog
-        </LinkButton>
+  
+  <div class="fixed inset-0 top-16 sm:top-20 z-0 flex flex-col md:flex-row h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] overflow-hidden">
+    <!-- MAP SIDE -->
+    <div class="relative flex-1 h-1/2 md:h-full bg-background overflow-hidden flex items-center justify-center">
+      <div class="absolute top-12 left-12 z-10 hidden md:block">
+        <h1 class="text-3xl font-bold tracking-tighter text-accent">The Atlas</h1>
+        <p id="atlas-subtitle" class="text-xs text-foreground/40 mt-1 uppercase tracking-widest font-mono">Archive // Global</p>
       </div>
 
-      <div class="mt-16 pt-8 border-t border-border/50 w-full max-w-sm">
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-dim/40 italic">
-          Mapping the digital footprint...
-        </p>
+      <!-- THE GLOBE CANVAS -->
+      <div id="globe-container" class="relative w-[300px] h-[300px] sm:w-[500px] sm:h-[500px]">
+        <canvas id="globe-canvas" class="w-full h-full cursor-grab active:cursor-grabbing opacity-0 transition-opacity duration-1000"></canvas>
       </div>
+
+      <!-- Subtle Grid Background -->
+      <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,var(--color-muted)_0%,transparent_100%)] opacity-20"></div>
     </div>
-  </main>
 
-  <Footer />
+    <!-- FEED SIDE -->
+    <div id="atlas-feed" class="flex-1 h-1/2 md:h-full overflow-y-auto px-6 sm:px-12 pt-12 pb-24 bg-background scroll-smooth relative">
+      {/* Subtle Vertical Divider */}
+      <div class="absolute left-0 top-0 bottom-0 w-px bg-border/20 hidden md:block z-10"></div>
+
+      {sortedYears.map((year) => (
+        <div class="year-group relative mb-48 pt-4" data-year={year}>
+          {/* Ghost Background Year */}
+          <div class="absolute -left-4 -top-12 text-9xl font-black tracking-tighter text-foreground/[0.015] select-none pointer-events-none z-0">
+            {year}
+          </div>
+
+          {Object.keys(groupedMemories[Number(year)]).map((month) => (
+            <div class="month-group mb-32 last:mb-0 relative z-10">
+              <div class="flex flex-col mb-16">
+                <div class="flex items-center gap-4 mb-2">
+                  <span class="text-[10px] font-mono uppercase tracking-[0.5em] text-foreground/20 leading-none">{year}</span>
+                  <div class="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent"></div>
+                </div>
+                <h2 class="text-3xl font-black uppercase tracking-tight text-accent/90 leading-none">{month}</h2>
+              </div>
+
+              {groupedMemories[Number(year)][month].map((memory: any, index: number) => {
+                const isSummary = memory.isSummary;
+                return (
+                  <div 
+                    class={`atlas-card group mb-32 last:mb-0 opacity-20 filter grayscale transition-all duration-[800ms] scale-95 ${isSummary ? 'trip-summary-card' : ''}`}
+                    data-lat={memory.data.coordinates[0]}
+                    data-lng={memory.data.coordinates[1]}
+                    data-trip={memory.data.trip}
+                    data-is-summary={isSummary ? "true" : "false"}
+                    id={`memory-${year}-${month}-${index}-${isSummary ? 'sum' : 'stop'}`}
+                  >
+                    <div class="flex items-center gap-3 mb-4">
+                      <span class={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-widest ${isSummary ? 'bg-accent text-white border-accent' : 'bg-accent/10 border-accent/20 text-accent'}`}>
+                        {memory.data.category}
+                      </span>
+                      <span class="text-[10px] font-mono text-foreground/40">
+                        {memory.data.location} // {memory.data.pubDatetime.toLocaleDateString('en-US', { year: 'numeric' })}
+                      </span>
+                    </div>
+                    
+                    <h2 class={`font-bold tracking-tight mb-8 ${isSummary ? 'text-5xl sm:text-7xl bg-gradient-to-r from-accent to-accent/50 bg-clip-text text-transparent' : 'text-4xl sm:text-5xl'}`}>
+                      {memory.data.title}
+                    </h2>
+
+                    {memory.data.images && memory.data.images.length > 0 && (
+                      <div class="carousel-container relative w-full mb-8 group/carousel">
+                        <div class="carousel-wrapper flex overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-2xl border border-border bg-muted/20 shadow-2xl transition-all duration-500 group-hover:shadow-accent/5">
+                          {memory.data.images.map((img: string, i: number) => (
+                            <div class="carousel-item flex-none w-full aspect-video snap-center overflow-hidden relative group/item">
+                              <!-- Cinematic Backdrop: Blurred and Zoomed -->
+                              <div class="absolute inset-0 z-0">
+                                <img src={img} alt="" class="w-full h-full object-cover scale-110 blur-xl opacity-50 contrast-125 saturate-150" aria-hidden="true" />
+                              </div>
+                              
+                              <!-- Foreground Image: Sharp and Contained -->
+                              <img src={img} alt={`${memory.data.title} - image ${i + 1}`} class="relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover/item:scale-[1.02]" loading="lazy" />
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {memory.data.images.length > 1 && (
+                          <>
+                            <button class="carousel-prev absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/20 backdrop-blur-md border border-white/10 text-white flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:bg-background/40 z-20" aria-label="Previous image">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <button class="carousel-next absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/20 backdrop-blur-md border border-white/10 text-white flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:bg-background/40 z-20" aria-label="Next image">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                          </>
+                        )}
+                        
+                        {memory.data.images.length > 1 && (
+                          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-2.5 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/10 z-10 transition-all duration-300 shadow-lg">
+                            {memory.data.images.map((_: any, i: number) => (
+                              <div class="carousel-dot w-1.5 h-1.5 rounded-full bg-white/30 transition-all duration-500" data-index={i}></div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div class="text-xl text-foreground/70 leading-relaxed font-light space-y-4">
+                      {isSummary ? (
+                        <p>
+                          {memory.data.tripDescription || `Join me on a journey through ${memory.data.trip}, exploring ${memory.data.location}. Scroll down to see the path unfold.`}
+                        </p>
+                      ) : (
+                        <memory.Content />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <style>
+    #atlas-feed::-webkit-scrollbar {
+      width: 4px;
+    }
+    #atlas-feed::-webkit-scrollbar-thumb {
+      background-color: var(--color-border);
+      border-radius: 9999px;
+    }
+    
+    .atlas-card.active {
+      opacity: 1;
+      filter: grayscale(0);
+      transform: scale(1);
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .carousel-dot.active {
+      background-color: white;
+      width: 1.5rem;
+    }
+    #atlas-subtitle {
+    transition: opacity 0.3s ease-in-out;
+  }
+</style>
+
+  <!-- D3 Dependencies -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  
+  <script is:inline>
+    // Variables declared in outer scope to be shared
+    let state = {
+      width: 500,
+      height: 500,
+      sensitivity: 75,
+      world: null,
+      currentRotation: [0, -30],
+      pins: [],
+      activePinId: null,
+      isInteracting: false,
+      canvas: null,
+      container: null,
+      context: null,
+      projection: null,
+      path: null,
+      trips: {}, // Stores { tripName: [{lat, lng, id}] }
+      baseScale: 250, // Initialized in resize
+      activeTripSummary: null // Stores the trip name if a summary card is active
+    };
+
+    function draw() {
+      if (!state.world || !state.context) return;
+      
+      const theme = document.documentElement.getAttribute('data-theme') || 
+                    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      const isLight = theme === 'light';
+
+      const colors = isLight ? {
+        sphere: "rgba(240, 244, 255, 0.8)",
+        land: "rgba(33, 115, 243, 0.3)",
+        graticule: "rgba(33, 39, 55, 0.08)",
+        border: "rgba(33, 115, 243, 0.2)",
+        pin: "rgba(33, 115, 243, 0.6)",
+        pinActive: "#2196f3",
+        glow: "rgba(33, 150, 243, 0.5)",
+        route: "rgba(33, 150, 243, 0.4)"
+      } : {
+        sphere: "rgba(33, 39, 55, 0.6)",
+        land: "rgba(255, 107, 1, 0.2)",
+        graticule: "rgba(255, 255, 255, 0.05)",
+        border: "rgba(255, 255, 255, 0.1)",
+        pin: "rgba(255, 107, 1, 0.6)",
+        pinActive: "#ff6b01",
+        glow: "#ff6b01",
+        route: "rgba(255, 107, 1, 0.4)"
+      };
+
+      const land = topojson.feature(state.world, state.world.objects.countries);
+      state.context.clearRect(0, 0, state.width, state.height);
+
+      // Sphere
+      state.context.beginPath();
+      state.context.arc(state.width / 2, state.height / 2, state.projection.scale(), 0, 2 * Math.PI);
+      state.context.fillStyle = colors.sphere; 
+      state.context.fill();
+
+      // Land
+      state.context.beginPath();
+      state.path(land);
+      state.context.fillStyle = colors.land; 
+      state.context.fill();
+      
+      // Graticule
+      state.context.beginPath();
+      state.path(d3.geoGraticule()());
+      state.context.strokeStyle = colors.graticule;
+      state.context.lineWidth = 0.5;
+      state.context.stroke();
+
+      // Routes
+      Object.keys(state.trips).forEach(tripName => {
+        const tripNodes = state.trips[tripName];
+        if (tripNodes.length < 2) return;
+
+        // Find progress: either show full route (if summary active) or up to active pin
+        let visibleNodes = [];
+        if (state.activeTripSummary === tripName) {
+          visibleNodes = tripNodes;
+        } else {
+          const activeIndex = tripNodes.findIndex(n => n.id === state.activePinId);
+          if (activeIndex === -1) return;
+          visibleNodes = tripNodes.slice(0, activeIndex + 1);
+        }
+        
+        if (visibleNodes.length < 2) return;
+
+        // 1. Draw Glow
+        state.context.beginPath();
+        state.context.setLineDash([4, 4]);
+        for (let i = 0; i < visibleNodes.length - 1; i++) {
+          const start = [visibleNodes[i].lng, visibleNodes[i].lat];
+          const end = [visibleNodes[i+1].lng, visibleNodes[i+1].lat];
+          const line = { type: "LineString", coordinates: [start, end] };
+          state.path(line);
+        }
+        state.context.strokeStyle = colors.route;
+        state.context.lineWidth = state.activeTripSummary === tripName ? 6 : 4;
+        state.context.shadowBlur = state.activeTripSummary === tripName ? 25 : 15;
+        state.context.shadowColor = colors.glow;
+        state.context.stroke();
+        
+        // 2. Draw Main Path
+        state.context.beginPath();
+        state.context.shadowBlur = 0;
+        for (let i = 0; i < visibleNodes.length - 1; i++) {
+          const start = [visibleNodes[i].lng, visibleNodes[i].lat];
+          const end = [visibleNodes[i+1].lng, visibleNodes[i+1].lat];
+          const line = { type: "LineString", coordinates: [start, end] };
+          state.path(line);
+        }
+        state.context.strokeStyle = colors.route;
+        state.context.lineWidth = 2;
+        state.context.stroke();
+        state.context.setLineDash([]);
+      });
+
+      // Sphere Border
+      state.context.beginPath();
+      state.context.arc(state.width / 2, state.height / 2, state.projection.scale(), 0, 2 * Math.PI);
+      state.context.strokeStyle = colors.border;
+      state.context.lineWidth = 1;
+      state.context.stroke();
+
+      // Pins
+      state.pins.forEach(pin => {
+        const coords = state.projection([pin.lng, pin.lat]);
+        const gdistance = d3.geoDistance([pin.lng, pin.lat], state.projection.invert([state.width/2, state.height/2]));
+        
+        if (gdistance < Math.PI / 2) {
+          const isActive = pin.id === state.activePinId;
+          const isPartofActiveTrip = pin.trip && state.activePinId && 
+                                     pin.trip === state.pins.find(p => p.id === state.activePinId)?.trip;
+
+          state.context.beginPath();
+          state.context.arc(coords[0], coords[1], isActive ? 10 : (isPartofActiveTrip ? 6 : 4), 0, 2 * Math.PI);
+          state.context.fillStyle = isActive ? colors.pinActive : colors.pin;
+          
+          if (isActive) {
+            state.context.shadowBlur = 25;
+            state.context.shadowColor = colors.glow;
+          }
+          
+          state.context.fill();
+          state.context.shadowBlur = 0;
+          
+          if (isActive) {
+            state.context.beginPath();
+            state.context.arc(coords[0], coords[1], 16, 0, 2 * Math.PI);
+            state.context.strokeStyle = colors.pinActive + "44"; // Faded ring
+            state.context.lineWidth = 2;
+            state.context.stroke();
+          }
+        }
+      });
+    }
+
+    function resize() {
+      if (!state.container || !state.canvas || !state.context) return;
+      
+      const rect = state.container.getBoundingClientRect();
+      state.width = rect.width;
+      state.height = rect.height;
+      state.canvas.width = state.width * devicePixelRatio;
+      state.canvas.height = state.height * devicePixelRatio;
+      state.context.scale(devicePixelRatio, devicePixelRatio);
+      
+      state.baseScale = state.width / 2.1;
+      state.projection.translate([state.width / 2, state.height / 2])
+                      .scale(state.baseScale);
+      draw();
+    }
+
+    async function initGlobe() {
+      state.canvas = document.getElementById("globe-canvas");
+      state.container = document.getElementById("globe-container");
+      
+      if (!state.canvas || !state.container) {
+        setTimeout(initGlobe, 10);
+        return;
+      }
+
+      state.context = state.canvas.getContext("2d");
+      state.projection = d3.geoOrthographic();
+      state.path = d3.geoPath(state.projection, state.context);
+
+      try {
+        state.world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+        const cards = document.querySelectorAll(".atlas-card");
+        state.pins = Array.from(cards)
+          .filter(card => card.dataset.isSummary !== "true") // Don't create pins for summaries
+          .map(card => ({
+            lat: parseFloat(card.dataset.lat),
+            lng: parseFloat(card.dataset.lng),
+            trip: card.dataset.trip,
+            id: card.id
+          }));
+
+        // Organize trips for path drawing
+        state.trips = {};
+        state.pins.forEach(pin => {
+          if (pin.trip) {
+            if (!state.trips[pin.trip]) state.trips[pin.trip] = [];
+            state.trips[pin.trip].push(pin);
+          }
+        });
+        
+        // We want to keep the chronological order for trip drawing
+        // They are already sorted chronologically in the frontmatter processing
+
+        window.addEventListener("resize", resize);
+        
+        // WATCH FOR THEME CHANGES
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'data-theme' || mutation.attributeName === 'class') {
+              draw();
+            }
+          });
+        });
+        observer.observe(document.documentElement, { attributes: true });
+
+        resize();
+        setupInteractions();
+        setupScrollSync();
+        
+        // Show canvas
+        state.canvas.classList.remove("opacity-0");
+        state.canvas.classList.add("opacity-100");
+
+        draw();
+        
+        d3.timer((elapsed) => {
+          if (!state.isInteracting && !state.activePinId) {
+            state.projection.rotate([state.currentRotation[0] + elapsed * 0.008, state.currentRotation[1]]);
+            draw();
+          }
+        });
+      } catch (e) {
+        console.error("Globe failed to init:", e);
+      }
+    }
+
+    function setupInteractions() {
+      d3.select(state.canvas).call(d3.drag()
+        .on("start", () => state.isInteracting = true)
+        .on("drag", (event) => {
+          const rotate = state.projection.rotate();
+          const k = state.sensitivity / state.projection.scale();
+          state.projection.rotate([rotate[0] + event.dx * k, rotate[1] - event.dy * k]);
+          state.currentRotation = state.projection.rotate();
+          draw();
+        })
+        .on("end", () => state.isInteracting = false)
+      );
+    }
+
+    function setupScrollSync() {
+      const feed = document.getElementById("atlas-feed");
+      const cards = document.querySelectorAll(".atlas-card");
+      const subtitle = document.getElementById("atlas-subtitle");
+      const yearGroups = document.querySelectorAll(".year-group");
+
+      if (!feed) return;
+
+      feed.addEventListener("scroll", () => {
+        const feedRect = feed.getBoundingClientRect();
+        
+        // 1. Dynamic Title Sync (Option 1)
+        let activeYear = "Global";
+        yearGroups.forEach(group => {
+          const rect = group.getBoundingClientRect();
+          // If the year group has entered the viewport or is currently crossing the top
+          if (rect.top < feedRect.top + 250 && rect.bottom > feedRect.top + 50) {
+            activeYear = group.dataset.year;
+          }
+        });
+
+        if (subtitle) {
+          const targetText = `Archive // ${activeYear}`;
+          if (subtitle.textContent !== targetText) {
+            subtitle.style.opacity = "0";
+            setTimeout(() => {
+              subtitle.textContent = targetText;
+              subtitle.style.opacity = "1";
+            }, 200);
+          }
+        }
+
+        // 2. Globe Rotation Sync
+        const feedCenter = feedRect.top + feedRect.height / 2;
+        
+        let mostCentral = null;
+        let minDistance = Infinity;
+
+        cards.forEach(card => {
+          const cardRect = card.getBoundingClientRect();
+          const cardCenter = cardRect.top + cardRect.height / 2;
+          const distance = Math.abs(cardCenter - feedCenter);
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            mostCentral = card;
+          }
+        });
+
+        if (mostCentral && (mostCentral.id !== state.activePinId)) {
+          state.activePinId = mostCentral.id;
+          state.activeTripSummary = mostCentral.dataset.isSummary === "true" ? mostCentral.dataset.trip : null;
+          
+          cards.forEach(c => c.classList.remove("active"));
+          mostCentral.classList.add("active");
+          
+          const targetLat = parseFloat(mostCentral.dataset.lat);
+          const targetLng = parseFloat(mostCentral.dataset.lng);
+          const isTrip = !!mostCentral.dataset.trip;
+          const isSummary = mostCentral.dataset.isSummary === "true";
+          
+          // Cinematic Zoom: 
+          // Summary = Medium Zoom (3x base)
+          // Stop = Deep Zoom (4.5x base)
+          // Standalone = Global (1x base)
+          let targetScale = state.baseScale;
+          if (isSummary) targetScale = state.baseScale * 2.8;
+          else if (isTrip) targetScale = state.baseScale * 4.5;
+          
+          if (!state.isInteracting) {
+            d3.transition()
+              .duration(1200)
+              .tween("move", () => {
+                const r = d3.interpolate(state.projection.rotate(), [-targetLng, -targetLat]);
+                const s = d3.interpolate(state.projection.scale(), targetScale);
+                return (t) => {
+                  state.projection.rotate(r(t));
+                  state.projection.scale(s(t));
+                  draw();
+                };
+              });
+          }
+        }
+      });
+      feed.dispatchEvent(new Event('scroll'));
+    }
+
+    function initCarousels() {
+      const carousels = document.querySelectorAll(".carousel-container");
+      
+      carousels.forEach(container => {
+        const wrapper = container.querySelector(".carousel-wrapper");
+        const dots = container.querySelectorAll(".carousel-dot");
+        const prevBtn = container.querySelector(".carousel-prev");
+        const nextBtn = container.querySelector(".carousel-next");
+        
+        if (!wrapper || dots.length === 0) return;
+
+        const handleScroll = () => {
+          const scrollLeft = wrapper.scrollLeft;
+          const width = wrapper.clientWidth;
+          const index = Math.round(scrollLeft / width);
+          
+          dots.forEach((dot, i) => {
+            if (i === index) {
+              dot.classList.add("active");
+            } else {
+              dot.classList.remove("active");
+            }
+          });
+        };
+
+        if (prevBtn) {
+          prevBtn.addEventListener("click", () => {
+            wrapper.scrollBy({ left: -wrapper.clientWidth, behavior: 'smooth' });
+          });
+        }
+        
+        if (nextBtn) {
+          nextBtn.addEventListener("click", () => {
+            wrapper.scrollBy({ left: wrapper.clientWidth, behavior: 'smooth' });
+          });
+        }
+
+        wrapper.addEventListener("scroll", handleScroll);
+        // Initial state
+        handleScroll();
+      });
+    }
+
+    // Run on load and after transitions
+    function init() {
+      initGlobe();
+      initCarousels();
+    }
+
+    document.addEventListener("astro:page-load", init);
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      window.addEventListener('load', init);
+    }
+  </script>
 </Layout>

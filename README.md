@@ -94,9 +94,11 @@ Every file must start with this data block:
 ---
 title: "Memory Title"
 location: "City, Country"
-coordinates: [latitude, longitude] # [Number, Number]
-pubDatetime: 2024-05-20T12:00:00Z    # Used for timeline sorting
+Coordinates: [latitude, longitude] # [Number, Number]
+pubDatetime: 2024-10-01T12:00:00Z    # Used for timeline sorting
 category: "travel"                  # "travel" or "dining"
+trip: "Japan Trip"                  # Optional: Group entries into a journey
+tripDescription: "A custom intro..." # Optional: Intro text for the trip summary
 images:
   - "CLOUDINARY_URL_1"
   - "CLOUDINARY_URL_2"
@@ -106,15 +108,30 @@ tags: ["city", "adventure"]
 Write your story here in Markdown.
 ```
 
-### 3. Coordinate Lookup
+### 3. Connected Trips (Journeys)
+If you provide a `trip` field (e.g., `"Japan Trip"`), the Atlas will:
+1.  **Group** these entries together in the feed.
+2.  **Sort** them chronologically (Start → End) within the trip block.
+3.  **Draw** a connected, dashed route on the globe between the locations.
+4.  **Inject** a "Summary Card" at the start of the trip that shows the full route, zooms out, and displays a "Highlight Reel" of images.
+
+> [!TIP]
+> **Custom Intros**: Add a `tripDescription: "My story..."` to the frontmatter of any stop in the trip. The Atlas will use this text for the Summary Card instead of the auto-generated text.
+
+
+### 4. Coordinate Lookup
 1.  Go to [Google Maps](https://www.google.com/maps).
 2.  **Right-click** on the specific location.
 3.  The first numbers provided (e.g., `48.858, 2.294`) are the **Latitude** and **Longitude**.
 4.  Copy them exactly into the `coordinates: [lat, lng]` field.
 
-### 4. Cloudinary Image Optimization
+### 5. Cloudinary Image Optimization
 To ensure the Atlas loads instantly, always include `/f_auto,q_auto/` in your Cloudinary URLs:
-`https://res.cloudinary.com/[id]/image/upload/f_auto,q_auto/v123.../image.jpg`
+`https://res.cloudinary.com/[id]/image/upload/f_auto,q_auto/v1.../image.jpg`
+
+> [!NOTE]
+> The Atlas is configured to show the **full image** (no cropping). If your photo isn't 16:9, it will appear with a subtle background to fill the frame.
+
 
 ---
 

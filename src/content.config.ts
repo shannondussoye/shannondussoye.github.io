@@ -49,6 +49,8 @@ const atlas = defineCollection({
       images: z.array(z.string()).default([]), // Array of image URLs for carousel
       category: z.enum(["travel", "dining"]).default("travel"),
       tags: z.array(z.string()).default([]),
+      trip: z.string().optional(),
+      tripDescription: z.string().optional(), // Custom intro for trip summary
       draft: z.boolean().optional(),
     }),
 });
