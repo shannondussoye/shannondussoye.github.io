@@ -1,0 +1,213 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { SITE } from "@/config";
+
+const shelfItems = await getCollection("shelf", ({ data }) => !data.draft);
+const sortedItems = shelfItems.sort(
+  (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
+);
+
+const categories = ["all", "movie", "book", "tv", "audio", "podcast"];
+---
+
+<Layout title={`The Shelf | ${SITE.title}`}>
+  <Header />
+
+  <!-- Filter Bar - Pill Style (Fixed Top) -->
+  <div class="fixed bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-1 p-1.5 rounded-2xl bg-muted/40 backdrop-blur-3xl border border-border/50 shadow-2xl overflow-x-auto max-w-[90vw] scrollbar-hide">
+    {categories.map((cat) => (
+      <button
+        class={`filter-btn whitespace-nowrap px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${cat === 'all' ? 'active bg-accent text-white shadow-lg shadow-accent/20' : 'text-foreground/40 hover:text-foreground hover:bg-foreground/5'}`}
+        data-category={cat}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
+
+  <main id="main-content" class="relative min-h-svh bg-transparent overflow-hidden selection:bg-accent/30">
+    <!-- Cinematic Background Blur - Visible behind content -->
+    <div id="shelf-bg" class="fixed inset-0 z-0 transition-opacity duration-[1.5s] ease-in-out opacity-0 pointer-events-none"></div>
+    <div class="fixed inset-0 z-0 bg-background/10 backdrop-blur-[1px] pointer-events-none"></div>
+
+    <!-- Scrolly Container -->
+    <div id="shelf-scroller" class="relative z-10 h-svh overflow-y-auto snap-y snap-mandatory scrollbar-hide">
+      {sortedItems.length > 0 ? (
+        sortedItems.map((item, index) => (
+          <section 
+            class="item-section h-svh w-full flex items-center justify-center snap-start relative px-6 group"
+            data-color={item.data.color}
+            data-type={item.data.type}
+          >
+            <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+              <!-- Poster Side -->
+              <div class="relative justify-self-center lg:justify-self-end">
+                <div class="absolute -inset-8 bg-accent/20 blur-[100px] rounded-full opacity-0 group-hover:opacity-60 transition-opacity duration-1000"></div>
+                <div class="relative w-[240px] sm:w-[340px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-border/50 transform transition-all duration-[1000ms] ease-out group-hover:scale-[1.03] group-hover:shadow-accent/20 group-hover:-rotate-1">
+                  <img 
+                    src={item.data.image} 
+                    alt={item.data.title}
+                    class="w-full h-full object-cover"
+                    loading={index === 0 ? "eager" : "lazy"}
+                  />
+                  <!-- Glass Overlay -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                </div>
+              </div>
+
+              <!-- Content Side -->
+              <div class="text-left space-y-6 lg:space-y-8 animate-fade-in-up">
+                <div class="space-y-4">
+                  <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 text-accent text-[9px] font-black uppercase tracking-widest">
+                      {item.data.type}
+                    </span>
+                    <span class="text-[10px] font-mono text-foreground/40 uppercase tracking-widest">
+                      {item.data.type === 'movie' ? item.data.author : item.data.category} • {item.data.pubDatetime.getFullYear()}
+                    </span>
+                  </div>
+                  <h1 class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter text-foreground leading-[1.1] transition-colors">
+                    {item.data.link ? (
+                      <a href={item.data.link} target="_blank" rel="noopener noreferrer" class="group/link hover:text-accent transition-colors flex items-start gap-4">
+                        {item.data.title}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-foreground/20 group-hover/link:text-accent group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-all mt-2 sm:mt-4">
+                          <path d="M7 17L17 7"/>
+                          <path d="M7 7h10v10"/>
+                        </svg>
+                      </a>
+                    ) : (
+                      item.data.title
+                    )}
+                  </h1>
+                  <p class="text-accent text-lg sm:text-xl font-bold tracking-tight opacity-90">
+                      {item.data.type === 'movie' ? item.data.category : item.data.author}
+                  </p>
+                </div>
+
+                <div class="text-base sm:text-lg text-foreground/70 font-medium leading-relaxed max-w-lg">
+                  {item.data.description}
+                </div>
+
+                <div class="flex items-center gap-1.5 py-2">
+                  {[...Array(5)].map((_, i) => (
+                    <svg 
+                      class={`w-5 h-5 ${i < item.data.rating ? 'text-accent fill-accent' : 'text-muted/40 fill-muted/20'}`}
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        ))
+      ) : (
+        <div class="h-svh flex items-center justify-center text-foreground/40 italic font-medium">
+          The shelf is currently empty...
+        </div>
+      )}
+
+      <!-- Move Footer inside scroller for cinematic flow -->
+      <div class="snap-start py-20 bg-background/50 backdrop-blur-md">
+        <Footer />
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Cinematic Animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  .filter-btn.active {
+    background-color: var(--color-accent);
+    color: white;
+  }
+</style>
+
+<script>
+  function initShelf() {
+    const scroller = document.querySelector("#shelf-scroller");
+    const sections = document.querySelectorAll(".item-section");
+    const bg = document.querySelector("#shelf-bg") as HTMLElement;
+    const filterBtns = document.querySelectorAll(".filter-btn");
+
+    if (!scroller || !bg) return;
+
+    // 1. Cinematic Background Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const color = (entry.target as HTMLElement).dataset.color;
+            if (color && bg) {
+              bg.style.background = `radial-gradient(circle at center, ${color} 0%, transparent 70%)`;
+              bg.style.filter = "blur(100px) saturate(1.5)";
+              bg.style.opacity = "0.4";
+            }
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    // 2. Filter Logic
+    filterBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const category = (btn as HTMLElement).dataset.category;
+        
+        // Update UI
+        filterBtns.forEach(b => {
+          b.classList.remove("active", "bg-accent", "text-white", "shadow-lg");
+          b.classList.add("text-foreground/40");
+        });
+        btn.classList.add("active", "bg-accent", "text-white", "shadow-lg");
+        btn.classList.remove("text-foreground/40");
+
+        // Filter Sections
+        sections.forEach((section) => {
+          const type = (section as HTMLElement).dataset.type;
+          if (category === "all" || type === category) {
+            (section as HTMLElement).style.display = "flex";
+          } else {
+            (section as HTMLElement).style.display = "none";
+          }
+        });
+
+        // Scroll to top of filtered results
+        scroller.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  document.addEventListener("astro:page-load", initShelf);
+  // Also run on initial load if page-load doesn't fire
+  if (document.readyState === 'complete') initShelf();
+</script>
+

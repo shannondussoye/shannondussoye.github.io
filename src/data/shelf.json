@@ -1,0 +1,67 @@
+[
+  {
+    "id": "naduvula-konjam-pakkatha-kaanom",
+    "title": "Naduvula Konjam Pakkatha Kaanom",
+    "type": "movie",
+    "category": "Comedy",
+    "pubDatetime": "2026-02-09T03:25:53.720Z",
+    "author": "Watch Now",
+    "description": "In an accident two days before his wedding, a young man forgets the last year of his life. His friends are determined to ensure that he gets married despite his condition.",
+    "image": "https://media.themoviedb.org/t/p/w500/z8zfkQND0z7G5ACgKwv7jBKZNhh.jpg",
+    "rating": 5,
+    "color": "rgba(45, 27, 0, 0.4)",
+    "link": "https://www.themoviedb.org/movie/146582"
+  },
+  {
+    "id": "maharaja",
+    "title": "Maharaja",
+    "type": "movie",
+    "category": "Action",
+    "pubDatetime": "2026-02-09T03:25:52.487Z",
+    "author": "Nithilan Saminathan",
+    "description": "A barber seeks vengeance after his home is burglarized, cryptically telling police his",
+    "image": "https://media.themoviedb.org/t/p/w500/s0m4TM1XRAftQStgKpw024RvkJo.jpg",
+    "rating": 5,
+    "color": "rgba(51, 0, 102, 0.4)",
+    "link": "https://www.themoviedb.org/movie/1118224"
+  },
+  {
+    "id": "educated",
+    "title": "Educated",
+    "type": "book",
+    "category": "Reading",
+    "pubDatetime": "2026-02-09T03:16:00.716Z",
+    "author": "Tara Westover",
+    "description": "*Educated* is a 2018 memoir by the American author Tara Westover. Westover recounts overcoming her survivalist Mormon family in order to go to college, and emphasizes the importance of education in enlarging her world. She details her journey from her isolated life in the mountains of Idaho to compl...",
+    "image": "https://covers.openlibrary.org/b/id/8314077-L.jpg",
+    "rating": 5,
+    "color": "rgba(45, 45, 45, 0.4)",
+    "link": "https://openlibrary.org/works/OL18139176W/Educated?edition=key%3A/books/OL45153788M"
+  },
+  {
+    "id": "born-a-crime",
+    "title": "Born a Crime",
+    "type": "book",
+    "category": "Reading",
+    "pubDatetime": "2026-02-09T03:15:47.261Z",
+    "author": "Trevor Noah",
+    "description": "Born a Crime is the story of a mischievous young boy who grows into a restless young man as he struggles to find himself in a world where he was never supposed to exist. It is also the story of that young man’s relationship with his fearless, rebellious, and fervently religious mother—his teammate,...",
+    "image": "https://covers.openlibrary.org/b/id/8294078-L.jpg",
+    "rating": 5,
+    "color": "rgba(0, 26, 51, 0.4)",
+    "link": "https://openlibrary.org/works/OL17824318W/Born_a_Crime?edition=key%3A/books/OL26414512M"
+  },
+  {
+    "id": "inception",
+    "title": "Inception",
+    "type": "movie",
+    "category": "Action",
+    "pubDatetime": "2026-02-09T03:25:25.474Z",
+    "author": "Christopher Nolan",
+    "description": "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life as payment for a task considered to be impossible:",
+    "image": "https://media.themoviedb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg",
+    "rating": 5,
+    "color": "rgba(45, 27, 0, 0.4)",
+    "link": "https://www.themoviedb.org/movie/27205-inception"
+  }
+]

@@ -50,7 +50,7 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
       });
       activityItems = [...activityItems, ...bskyItems];
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 2. SUBSTACK
   try {
@@ -80,7 +80,7 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
         activityItems = [...activityItems, ...ssItems];
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 3. HACKER NEWS
   try {
@@ -112,7 +112,7 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
         activityItems = [...activityItems, ...hnItems];
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 4. RAINDROP
   try {
@@ -142,7 +142,7 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
         activityItems = [...activityItems, ...rdItems];
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 5. GITHUB STARS
   try {
@@ -168,7 +168,7 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
       }));
       activityItems = [...activityItems, ...ghItems];
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 6. INTERNAL CONTENT
   const blogPosts = await getCollection("blog", ({ data }) => !data.draft);
@@ -201,11 +201,30 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
       month: 'short',
       day: 'numeric'
     }),
-    color: "text-yellow-500",
+    color: "text-accent",
     link: "/workshop/"
   }));
 
-  activityItems = [...activityItems, ...blogItems, ...workshopItems];
+  const shelfEntries = await getCollection("shelf");
+  const shelfItems = shelfEntries
+    .filter(({ data }) => !data.draft)
+    .map(item => ({
+      type: "curated",
+      platform: "Shelf",
+      category: "reading",
+      label: item.data.type,
+      title: item.data.title,
+      recommendation: item.data.description,
+      date: item.data.pubDatetime.getTime(),
+      displayDate: item.data.pubDatetime.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric'
+      }),
+      color: "text-accent",
+      link: "/shelf/"
+    }));
+
+  activityItems = [...activityItems, ...blogItems, ...workshopItems, ...shelfItems];
 
   // Final Sort & Cap
   activityItems.sort((a, b) => b.date - a.date);

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 4: Minimalist Stacks (Interative)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=Bebas+Neue&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --accent: #ffd700;
+            --bg: #000;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 6rem 2rem 10rem;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow-x: hidden;
+        }
+
+        /* Cinematic Background Blur */
+        #dynamic-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            filter: blur(80px) saturate(1.5);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1rem;
+            color: #444;
+            letter-spacing: 5px;
+            margin-bottom: 4rem;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            padding: 2.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.5s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .item-row.hidden {
+            display: none;
+        }
+
+        .item-row:hover {
+            padding-left: 2rem;
+            border-bottom-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .index {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            color: #222;
+            margin-right: 3rem;
+            transition: color 0.3s;
+        }
+
+        .item-row:hover .index {
+            color: gold;
+        }
+
+        .details h2 {
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: 300;
+            transition: transform 0.3s;
+        }
+
+        .item-row:hover h2 {
+            transform: translateX(10px);
+            color: gold;
+        }
+
+        .meta {
+            font-size: 0.8rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .type-tag {
+            color: var(--accent);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .float-img {
+            position: fixed;
+            width: 320px;
+            height: 480px;
+            top: 50%;
+            right: 15%;
+            transform: translateY(-50%) rotate(5deg);
+            background: #111;
+            border-radius: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+            object-fit: cover;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+        }
+
+        /* Digital Pulse Filter Bar */
+        .filter-bar {
+            position: fixed;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 8px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 4px;
+            z-index: 1000;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: none;
+            color: #666;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            color: #fff;
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="dynamic-bg"></div>
+    <div class="section-title">THE CULTURAL STACK</div>
+
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterItems('all', this)">All</button>
+        <button class="filter-btn" onclick="filterItems('movie', this)">Movies</button>
+        <button class="filter-btn" onclick="filterItems('book', this)">Books</button>
+        <button class="filter-btn" onclick="filterItems('tv', this)">TV Shows</button>
+        <button class="filter-btn" onclick="filterItems('audio', this)">Audiobooks</button>
+    </div>
+
+    <div class="item-stack">
+        <div class="item-row" data-type="movie" onmouseenter="showImg('inception', '#1a1a2e')" onmouseleave="hideImg()">
+            <div class="index">01</div>
+            <div class="details">
+                <h2>Inception</h2>
+                <div class="meta">
+                    <span class="type-tag">Movie</span>
+                    Christopher Nolan · 2010
+                </div>
+            </div>
+        </div>
+        <div class="item-row" data-type="book" onmouseenter="showImg('hailmary', '#001a33')" onmouseleave="hideImg()">
+            <div class="index">02</div>
+            <div class="details">
+                <h2>Project Hail Mary</h2>
+                <div class="meta">
+                    <span class="type-tag">Book</span>
+                    Andy Weir · 2021
+                </div>
+            </div>
+        </div>
+        <div class="item-row" data-type="tv" onmouseenter="showImg('succession', '#2d1b00')" onmouseleave="hideImg()">
+            <div class="index">03</div>
+            <div class="details">
+                <h2>Succession</h2>
+                <div class="meta">
+                    <span class="type-tag">TV Show</span>
+                    Jesse Armstrong · 2018
+                </div>
+            </div>
+        </div>
+        <div class="item-row" data-type="audio" onmouseenter="showImg('godfather', '#1a0000')" onmouseleave="hideImg()">
+            <div class="index">04</div>
+            <div class="details">
+                <h2>The Godfather</h2>
+                <div class="meta">
+                    <span class="type-tag">Audiobook</span>
+                    Mario Puzo · Narrated
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <img id="preview" class="float-img" src="">
+
+    <script>
+        const imgMap = {
+            inception: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0',
+            hailmary: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f',
+            succession: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23',
+            godfather: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1'
+        };
+        const preview = document.getElementById('preview');
+        const dynamicBg = document.getElementById('dynamic-bg');
+
+        function showImg(id, color) {
+            preview.src = imgMap[id] + '?auto=format&fit=crop&q=80&w=1000';
+            preview.style.opacity = '1';
+            preview.style.transform = 'translateY(-50%) rotate(0deg) scale(1.1)';
+
+            // Atlas-style background shift
+            dynamicBg.style.background = `radial-gradient(circle at center, ${color} 0%, transparent 100%)`;
+            dynamicBg.style.opacity = '0.5';
+        }
+
+        function hideImg() {
+            preview.style.opacity = '0';
+            preview.style.transform = 'translateY(-50%) rotate(5deg) scale(1)';
+            dynamicBg.style.opacity = '0';
+        }
+
+        function filterItems(type, btn) {
+            // Update buttons
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Filter rows
+            const rows = document.querySelectorAll('.item-row');
+            rows.forEach(row => {
+                if (type === 'all' || row.dataset.type === type) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

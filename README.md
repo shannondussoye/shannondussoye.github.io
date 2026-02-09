@@ -150,3 +150,34 @@ heroImage: "/assets/workshop/image-name.png"
 ---
 ```
 3.  Place the corresponding image in `public/assets/workshop/`.
+
+---
+
+# 📚 The Shelf Contributor's Guide
+
+Adding movies, books, and TV shows to the Shelf involves a simple CLI automation.
+
+### 1. Find the URL
+- **Movies/TV**: Find the item on [TheMovieDB (TMDB)](https://www.themoviedb.org/).
+- **Books**: Find the item on [OpenLibrary](https://openlibrary.org/).
+
+### 2. Run the Script
+Open your terminal and run:
+
+```bash
+# Add a Movie/TV Show
+npx tsx scripts/add-to-shelf.ts https://www.themoviedb.org/movie/933260-gladiator-ii
+
+# Add a Book
+npx tsx scripts/add-to-shelf.ts https://openlibrary.org/books/OL31189M/Gödel_Escher_Bach
+```
+
+### 3. Automatic Magic ✨
+The script will:
+1.  Fetch the title, author, description, and high-res poster.
+2.  Assign a random cinematic background color.
+3.  Add the entry to `src/data/shelf.json`.
+4.  Prevent duplicates (updates existing entry if ID matches).
+
+### 4. Manual Overrides
+If you need to tweak the description or rating, simply edit `src/data/shelf.json` directly.

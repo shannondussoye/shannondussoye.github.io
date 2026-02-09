@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Top 10</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            scroll-behavior: smooth
+        }
+
+        /* ═══ NAV ═════════════════════════════════════════════════════════════════ */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0, 0, 0, .9) 0%, transparent 100%);
+            backdrop-filter: blur(10px)
+        }
+
+        .nav-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2rem;
+            letter-spacing: 2px
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem
+        }
+
+        .nav-link {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            opacity: .6;
+            transition: opacity .3s;
+            text-transform: uppercase;
+            font-size: .9rem;
+            letter-spacing: 1px
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            opacity: 1
+        }
+
+        /* ═══ HERO ════════════════════════════════════════════════════════════════ */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #000 100%)
+        }
+
+        .hero h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(4rem, 15vw, 12rem);
+            line-height: .9;
+            letter-spacing: 4px;
+            margin-bottom: 1rem
+        }
+
+        .hero p {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: #888;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            max-width: 600px
+        }
+
+        .hero-scroll {
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            animation: pulse 2s infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: .5
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        /* ═══ RANKED ITEM ═════════════════════════════════════════════════════════ */
+        .item {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4rem 2rem;
+            opacity: 0;
+            transform: translateY(60px);
+            transition: all 1s cubic-bezier(.16, 1, .3, 1)
+        }
+
+        .item.visible {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        /* Background */
+        .item-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(30px) brightness(.3);
+            z-index: 0
+        }
+
+        .item-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0, 0, 0, .7) 0%, rgba(0, 0, 0, .9) 100%)
+        }
+
+        /* Content */
+        .item-content {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 4rem;
+            align-items: center
+        }
+
+        /* Poster */
+        .item-poster-container {
+            position: relative
+        }
+
+        .item-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, .8);
+            transition: transform .5s cubic-bezier(.16, 1, .3, 1)
+        }
+
+        .item:hover .item-poster {
+            transform: translateY(-10px)
+        }
+
+        /* Rank Badge */
+        .rank-badge {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            box-shadow: 0 10px 40px rgba(255, 255, 255, .3);
+            z-index: 2
+        }
+
+        /* Info */
+        .item-info {
+            padding: 2rem 0
+        }
+
+        .item-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 8rem;
+            line-height: 1;
+            opacity: .1;
+            margin-bottom: -2rem
+        }
+
+        .item-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 1;
+            margin-bottom: 1rem;
+            letter-spacing: 2px
+        }
+
+        .item-meta {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px
+        }
+
+        .item-genre {
+            display: inline-block;
+            padding: .5rem 1.2rem;
+            background: rgba(255, 255, 255, .1);
+            border-radius: 30px;
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, .2)
+        }
+
+        .item-rating {
+            display: flex;
+            gap: .3rem;
+            font-size: 2rem;
+            color: #ffd700
+        }
+
+        /* Reveal animation delays */
+        .item:nth-child(1) .item-poster {
+            animation: slideInLeft 1s .3s cubic-bezier(.16, 1, .3, 1) backwards
+        }
+
+        .item:nth-child(1) .item-info {
+            animation: slideInRight 1s .5s cubic-bezier(.16, 1, .3, 1) backwards
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-60px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(60px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        /* ═══ CATEGORY SELECTOR ══════════════════════════════════════════════════ */
+        .category-nav {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, .9);
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, .1);
+            z-index: 1000
+        }
+
+        .category-btn {
+            padding: .8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: .85rem;
+            letter-spacing: 1px;
+            transition: all .3s;
+            font-family: 'Inter', sans-serif
+        }
+
+        .category-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, .05)
+        }
+
+        .category-btn.active {
+            background: #fff;
+            color: #000
+        }
+
+        /* ═══ FOOTER ══════════════════════════════════════════════════════════════ */
+        .footer {
+            min-height: 50vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: #0a0a0a
+        }
+
+        .footer-content h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px
+        }
+
+        .footer-content p {
+            color: #666;
+            font-size: 1.1rem
+        }
+
+        /* ═══ RESPONSIVE ══════════════════════════════════════════════════════════ */
+        @media(max-width:1024px) {
+            .item-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center
+            }
+
+            .item-poster-container {
+                max-width: 300px;
+                margin: 0 auto
+            }
+
+            .rank-badge {
+                top: -10px;
+                left: 50%;
+                transform: translateX(-50%)
+            }
+
+            .nav {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem
+            }
+
+            .nav-links {
+                gap: 1rem
+            }
+
+            .category-nav {
+                bottom: 1rem;
+                flex-wrap: wrap;
+                justify-content: center
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Nav -->
+    <div class="nav">
+        <div class="nav-title">MY TOP 10</div>
+        <div class="nav-links">
+            <a href="#" class="nav-link active" data-category="movies">Movies</a>
+            <a href="#" class="nav-link" data-category="tv">TV Shows</a>
+            <a href="#" class="nav-link" data-category="books">Books</a>
+            <a href="#" class="nav-link" data-category="audiobooks">Audiobooks</a>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+        <h1>TOP 10<br>MOVIES</h1>
+        <p>My definitive ranked list of the films that shaped how I see the world</p>
+        <div class="hero-scroll">↓ Scroll to explore ↓</div>
+    </div>
+
+    <!-- Ranked List -->
+    <div id="list">
+
+        <!-- #10 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23141414%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#10</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g1' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23141414'/%3E%3Cstop offset='100%25' style='stop-color:%232a2a2a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g1)' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EThe Godfather%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="The Godfather">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">10</div>
+                    <h2 class="item-title">The Godfather</h2>
+                    <div class="item-meta">1972</div>
+                    <div class="item-genre">Crime Drama</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #9 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23221a3a%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#9</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g2' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23221a3a'/%3E%3Cstop offset='100%25' style='stop-color:%2344337a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g2)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EBlade Runner%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3E2049%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Blade Runner 2049">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">09</div>
+                    <h2 class="item-title">Blade Runner 2049</h2>
+                    <div class="item-meta">2017</div>
+                    <div class="item-genre">Sci-Fi</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #8 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23331c1c%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#8</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g3' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23331c1c'/%3E%3Cstop offset='100%25' style='stop-color:%23663333'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g3)' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='50' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EWhiplash%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Whiplash">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">08</div>
+                    <h2 class="item-title">Whiplash</h2>
+                    <div class="item-meta">2014</div>
+                    <div class="item-genre">Drama</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #7 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%232d1b00%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#7</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g4' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%232d1b00'/%3E%3Cstop offset='100%25' style='stop-color:%23593815'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g4)' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='50' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EParasite%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Parasite">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">07</div>
+                    <h2 class="item-title">Parasite</h2>
+                    <div class="item-meta">2019</div>
+                    <div class="item-genre">Thriller</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #6 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23132a13%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#6</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g5' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23132a13'/%3E%3Cstop offset='100%25' style='stop-color:%2331572c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g5)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='40' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EThe Dark%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='40' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EKnight%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="The Dark Knight">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">06</div>
+                    <h2 class="item-title">The Dark Knight</h2>
+                    <div class="item-meta">2008</div>
+                    <div class="item-genre">Action Thriller</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #5 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23331a00%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#5</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g6' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23331a00'/%3E%3Cstop offset='100%25' style='stop-color:%23664d00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g6)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EGoodfellas%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Goodfellas">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">05</div>
+                    <h2 class="item-title">Goodfellas</h2>
+                    <div class="item-meta">1990</div>
+                    <div class="item-genre">Crime Drama</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #4 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%230d1b2a%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#4</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g7' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%230d1b2a'/%3E%3Cstop offset='100%25' style='stop-color:%231b263b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g7)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='40' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EPulp%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='40' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EFiction%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Pulp Fiction">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">04</div>
+                    <h2 class="item-title">Pulp Fiction</h2>
+                    <div class="item-meta">1994</div>
+                    <div class="item-genre">Crime Drama</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #3 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%231a1a2e%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#3</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g8' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%231a1a2e'/%3E%3Cstop offset='100%25' style='stop-color:%230f3460'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g8)' width='400' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='50' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EInception%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="Inception">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">03</div>
+                    <h2 class="item-title">Inception</h2>
+                    <div class="item-meta">2010</div>
+                    <div class="item-genre">Sci-Fi Thriller</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #2 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23221f1f%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge">#2</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g9' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23221f1f'/%3E%3Cstop offset='100%25' style='stop-color:%23443d3d'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g9)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EThe%3C/text%3E%3Ctext x='50%25' y='52%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EShawshank%3C/text%3E%3Ctext x='50%25' y='59%25' font-size='35' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3ERedemption%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="The Shawshank Redemption">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">02</div>
+                    <h2 class="item-title">The Shawshank Redemption</h2>
+                    <div class="item-meta">1994</div>
+                    <div class="item-genre">Drama</div>
+                    <div class="item-rating">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- #1 -->
+        <div class="item">
+            <div class="item-bg"
+                style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27800%27 height=%271200%27%3E%3Crect fill=%27%23141414%27 width=%27800%27 height=%271200%27/%3E%3C/svg%3E')">
+            </div>
+            <div class="item-content">
+                <div class="item-poster-container">
+                    <div class="rank-badge" style="background:gold;width:100px;height:100px;font-size:3rem">#1</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='600'%3E%3Cdefs%3E%3ClinearGradient id='g10' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23141414'/%3E%3Cstop offset='100%25' style='stop-color:%232a2a2a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23g10)' width='400' height='600'/%3E%3Ctext x='50%25' y='45%25' font-size='35' fill='%23FFD700' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EThe Godfather%3C/text%3E%3Ctext x='50%25' y='55%25' font-size='35' fill='%23FFD700' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='bold'%3EPart II%3C/text%3E%3C/svg%3E"
+                        class="item-poster" alt="The Godfather Part II">
+                </div>
+                <div class="item-info">
+                    <div class="item-number">01</div>
+                    <h2 class="item-title">The Godfather Part II</h2>
+                    <div class="item-meta">1974</div>
+                    <div class="item-genre">Crime Drama</div>
+                    <div class="item-rating" style="color:gold">★★★★★</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-content">
+            <h2>That's the list.</h2>
+            <p>Switch categories above to see my top TV shows, books, and audiobooks</p>
+        </div>
+    </div>
+
+    <script>
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.3 });
+
+        document.querySelectorAll('.item').forEach(item => observer.observe(item));
+
+        // Category navigation (placeholder - would load different lists)
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                const category = link.dataset.category;
+                document.querySelector('.hero h1').innerHTML = `TOP 10<br>${category.toUpperCase()}`;
+                // In production: fetch and render new list
+            });
+        });
+    </script>
+</body>
+
+</html>

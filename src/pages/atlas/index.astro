@@ -90,14 +90,14 @@ const sortedYears = Object.keys(groupedMemories).sort((a, b) => Number(b) - Numb
   
   <div class="fixed inset-0 top-16 sm:top-20 z-0 flex flex-col md:flex-row h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] overflow-hidden">
     <!-- MAP SIDE -->
-    <div class="relative flex-1 h-1/2 md:h-full bg-background overflow-hidden flex items-center justify-center">
+    <div class="relative flex-[1.2] h-1/2 md:h-full bg-background overflow-hidden flex items-center justify-center">
       <div class="absolute top-12 left-12 z-10 hidden md:block">
         <h1 class="text-3xl font-bold tracking-tighter text-accent">The Atlas</h1>
         <p id="atlas-subtitle" class="text-xs text-foreground/40 mt-1 uppercase tracking-widest font-mono">Archive // Global</p>
       </div>
 
       <!-- THE GLOBE CANVAS -->
-      <div id="globe-container" class="relative w-[300px] h-[300px] sm:w-[500px] sm:h-[500px]">
+      <div id="globe-container" class="relative w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] lg:w-[650px] lg:h-[650px] 2xl:w-[850px] 2xl:h-[850px]">
         <canvas id="globe-canvas" class="w-full h-full cursor-grab active:cursor-grabbing opacity-0 transition-opacity duration-1000"></canvas>
       </div>
 

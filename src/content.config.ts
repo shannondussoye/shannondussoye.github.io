@@ -1,5 +1,5 @@
 import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { glob, file } from "astro/loaders";
 import { SITE } from "@/config";
 
 export const BLOG_PATH = "src/data/blog";
@@ -55,4 +55,24 @@ const atlas = defineCollection({
     }),
 });
 
-export const collections = { blog, workshop, atlas };
+const shelf = defineCollection({
+  loader: file("src/data/shelf.json"),
+  schema: () =>
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      type: z.enum(["movie", "book", "tv", "audio", "podcast"]),
+      category: z.string().optional(),
+      pubDatetime: z.coerce.date(),
+      author: z.string().optional(),
+      description: z.string(),
+      image: z.string().optional(),
+      rating: z.number().min(1).max(5).default(5),
+      color: z.string().default("rgba(255, 215, 0, 0.2)"), // Default gold blur
+      link: z.string().optional(), // Source URL (TMDB/OpenLibrary)
+      featured: z.boolean().optional(),
+      draft: z.boolean().optional(),
+    }),
+});
+
+export const collections = { blog, workshop, atlas, shelf };
