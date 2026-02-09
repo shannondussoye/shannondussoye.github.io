@@ -301,7 +301,7 @@ const menuLinks = [
     if (!menuBtn || !overlay || !closeIcon || !menuIcon) return;
 
     // Remove old listeners to be safe (cloning)
-    const newBtn = menuBtn.cloneNode(true);
+    const newBtn = menuBtn.cloneNode(true) as HTMLButtonElement;
     menuBtn.parentNode?.replaceChild(newBtn, menuBtn);
     
     newBtn.addEventListener("click", () => {
@@ -334,13 +334,13 @@ const menuLinks = [
     // Theme logic
     const themeBtns = document.querySelectorAll(".theme-toggle");
     themeBtns.forEach(btn => {
-      btn.onclick = () => {
+      btn.addEventListener("click", () => {
           const current = document.documentElement.getAttribute("data-theme");
           const next = current === "dark" ? "light" : "dark";
           document.documentElement.setAttribute("data-theme", next);
           localStorage.setItem("theme", next);
           if (window.theme) window.theme.setTheme(next);
-      };
+      });
     });
   }
 
