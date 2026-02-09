@@ -166,6 +166,15 @@ const menuLinks = [
     <!-- Top Branding -->
     <div class="text-xs font-black tracking-[0.3em] uppercase opacity-40 mt-6 text-foreground">Navigation</div>
 
+    <!-- Close Button (Inside Overlay) -->
+    <button
+      id="overlay-close-btn"
+      class="absolute top-6 right-4 p-2 focus-outline text-foreground z-50"
+      aria-label="Close Menu"
+    >
+      <IconX class="w-8 h-8" />
+    </button>
+
     <!-- Main Links -->
     <nav class="flex flex-col gap-4">
       {menuLinks.map((link, i) => (
@@ -324,11 +333,31 @@ const menuLinks = [
       // Toggle Icons
       const cIcon = newBtn.querySelector("#close-icon");
       const mIcon = newBtn.querySelector("#menu-icon");
-      if (cIcon && mIcon) {
+      if (cIcon && mIcon) { 
          cIcon.classList.toggle("hidden");
          mIcon.classList.toggle("hidden");
       }
     });
+
+    // Close Button Logic (Inside Overlay)
+    const overlayCloseBtn = document.getElementById("overlay-close-btn");
+    if (overlayCloseBtn) {
+      overlayCloseBtn.addEventListener("click", () => {
+        // Force Close
+        overlay.setAttribute("data-state", "closed");
+        newBtn.setAttribute("aria-expanded", "false");
+        newBtn.setAttribute("aria-label", "Open Menu");
+        document.body.classList.remove("menu-open");
+
+        // Reset Main Button Icons
+        const cIcon = newBtn.querySelector("#close-icon");
+        const mIcon = newBtn.querySelector("#menu-icon");
+        if (cIcon && mIcon) {
+           cIcon.classList.add("hidden");
+           mIcon.classList.remove("hidden");
+        }
+      });
+    }
 
     // Theme logic
     const themeBtns = document.querySelectorAll(".theme-toggle");
