@@ -7,6 +7,7 @@ import IconSunHigh from "@/assets/icons/IconSunHigh.svg";
 import IconMenuDeep from "@/assets/icons/IconMenuDeep.svg";
 import LinkButton from "./LinkButton.astro";
 import { SITE } from "@/config";
+import { SOCIALS } from "@/constants";
 
 import IconGlobe from "@/assets/icons/IconGlobe.svg";
 import IconSparkles from "@/assets/icons/IconSparkles.svg";
@@ -23,6 +24,13 @@ const isActive = (path: string) => {
 
   return currentPath === path || currentPathArray[0] === pathArray[0];
 };
+
+const menuLinks = [
+  { name: "Posts", href: "/posts", index: "01" },
+  { name: "Shelf", href: "/shelf", index: "02" },
+  { name: "Atlas", href: "/atlas", index: "03" },
+  { name: "About", href: "/about", index: "04" },
+];
 ---
 
 <a
@@ -47,17 +55,19 @@ const isActive = (path: string) => {
   >
     <a
       href="/"
-      class="py-1 text-xl leading-8 font-semibold whitespace-nowrap sm:static sm:my-auto sm:text-2xl sm:leading-none"
+      class="py-1 text-xl leading-8 font-semibold whitespace-nowrap sm:static sm:my-auto sm:text-2xl sm:leading-none relative z-[110]"
     >
       {SITE.title}
     </a>
+
     <nav
       id="nav-menu"
       class="flex w-full flex-col items-center sm:ms-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
     >
+      <!-- Menu Button -->
       <button
         id="menu-btn"
-        class="focus-outline self-end p-2 sm:hidden"
+        class="focus-outline self-end p-2 sm:hidden relative z-[110]"
         aria-label="Open Menu"
         aria-expanded="false"
         aria-controls="menu-items"
@@ -65,91 +75,72 @@ const isActive = (path: string) => {
         <IconX id="close-icon" class="hidden" />
         <IconMenuDeep id="menu-icon" />
       </button>
+
+      <!-- Desktop Navigation (Hidden on Mobile) -->
       <ul
-        id="menu-items"
-        class:list={[
-          "mt-4 grid w-44 grid-cols-2 place-content-center gap-2",
-          "[&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium [&>li>a]:hover:text-accent sm:[&>li>a]:px-2 sm:[&>li>a]:py-1",
-          "hidden",
-          "sm:mt-0 sm:flex sm:w-auto sm:gap-x-5 sm:gap-y-0",
-        ]}
+        id="desktop-menu"
+        class="hidden sm:flex sm:flex-row sm:items-center sm:justify-end sm:gap-x-5"
       >
-        <li class="col-span-2">
-          <a href="/posts" class:list={{ "active-nav": isActive("/posts") }}>
+        <li>
+          <a href="/posts" class:list={["hover:text-accent transition-colors", { "text-accent": isActive("/posts") }]}>
             Posts
           </a>
         </li>
-
-        <li class="col-span-2">
-          <a href="/about" class:list={{ "active-nav": isActive("/about") }}>
+        <li>
+          <a href="/about" class:list={["hover:text-accent transition-colors", { "text-accent": isActive("/about") }]}>
             About
           </a>
         </li>
 
-        <!-- Start Utility Icons Group -->
-        <li class="col-span-1 flex items-center justify-center border-t border-border pt-2 mt-2 sm:border-0 sm:pt-0 sm:mt-0">
-          <LinkButton
-            href="/workshop"
-            class:list={[
-              "focus-outline flex p-3 sm:p-1",
-              { "[&>svg]:stroke-accent": isActive("/workshop") },
-            ]}
-            title="Workshop"
-            aria-label="workshop"
-          >
-            <IconSparkles />
-            <span class="sr-only">Workshop</span>
-          </LinkButton>
-        </li>
-        <li class="col-span-1 flex items-center justify-center border-t border-border pt-2 mt-2 sm:border-0 sm:pt-0 sm:mt-0">
-          <LinkButton
-            href="/shelf"
-            class:list={[
-              "focus-outline flex p-3 sm:p-1",
-              { "[&>svg]:stroke-accent": isActive("/shelf") },
-            ]}
-            title="Shelf"
-            aria-label="shelf"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-bookshelf"><path d="M5 4h4v12h-4z" /><path d="M9 4h4v12h-4z" /><path d="M15 4h4v12h-4z" /><path d="M4 20h16" /></svg>
-            <span class="sr-only">Shelf</span>
-          </LinkButton>
-        </li>
-        <li class="col-span-1 flex items-center justify-center border-t border-border pt-2 mt-2 sm:border-0 sm:pt-0 sm:mt-0">
-          <LinkButton
-            href="/atlas"
-            class:list={[
-              "focus-outline flex p-3 sm:p-1",
-              { "[&>svg]:stroke-accent": isActive("/atlas") },
-            ]}
-            title="Atlas"
-            aria-label="atlas"
-          >
-            <IconGlobe />
-            <span class="sr-only">Atlas</span>
-          </LinkButton>
+        <!-- Desktop Utility Icons -->
+        <li class="flex items-center justify-center border-l border-border ml-2 pl-4 gap-4">
+            <LinkButton
+              href="/workshop"
+              class:list={["focus-outline flex p-1 hover:text-accent transition-colors", { "text-accent": isActive("/workshop") }]}
+              title="Workshop"
+              aria-label="workshop"
+            >
+              <IconSparkles />
+              <span class="sr-only">Workshop</span>
+            </LinkButton>
+
+            <LinkButton
+              href="/shelf"
+              class:list={["focus-outline flex p-1 hover:text-accent transition-colors", { "text-accent": isActive("/shelf") }]}
+              title="Shelf"
+              aria-label="shelf"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-bookshelf"><path d="M5 4h4v12h-4z" /><path d="M9 4h4v12h-4z" /><path d="M15 4h4v12h-4z" /><path d="M4 20h16" /></svg>
+              <span class="sr-only">Shelf</span>
+            </LinkButton>
+
+            <LinkButton
+              href="/atlas"
+              class:list={["focus-outline flex p-1 hover:text-accent transition-colors", { "text-accent": isActive("/atlas") }]}
+              title="Atlas"
+              aria-label="atlas"
+            >
+              <IconGlobe />
+              <span class="sr-only">Atlas</span>
+            </LinkButton>
+
+            <LinkButton
+              href="/search"
+              class:list={["focus-outline flex p-1 hover:text-accent transition-colors", { "text-accent": isActive("/search") }]}
+              title="Search"
+              aria-label="search"
+            >
+              <IconSearch />
+              <span class="sr-only">Search</span>
+            </LinkButton>
         </li>
 
-        <li class="col-span-1 flex items-center justify-center sm:border-l sm:border-border sm:ml-2 sm:pl-4">
-          <LinkButton
-            href="/search"
-            class:list={[
-              "focus-outline flex p-3 sm:p-1",
-              { "[&>svg]:stroke-accent": isActive("/search") },
-            ]}
-            title="Search"
-            aria-label="search"
-          >
-            <IconSearch />
-            <span class="sr-only">Search</span>
-          </LinkButton>
-        </li>
         {
           SITE.lightAndDarkMode && (
-            <li class="col-span-1 flex items-center justify-center">
+            <li>
               <button
-                id="theme-btn"
-                class="focus-outline relative size-12 p-4 sm:size-8 hover:[&>svg]:stroke-accent"
+                id="theme-btn-desktop"
+                class="focus-outline theme-toggle relative size-8 p-1 hover:text-accent transition-colors"
                 title="Toggles light & dark"
                 aria-label="auto"
                 aria-live="polite"
@@ -163,9 +154,72 @@ const isActive = (path: string) => {
       </ul>
     </nav>
   </div>
+    
+  <!-- Mobile Menu Overlay (Editorial Style) -->
+  <div 
+    id="mobile-menu-overlay" 
+    data-state="closed"
+    class="fixed inset-0 z-[100] bg-background flex flex-col justify-between p-8 sm:hidden"
+  >
+    <!-- Top Branding -->
+    <div class="text-xs font-black tracking-[0.3em] uppercase opacity-40 mt-6 text-foreground">Navigation</div>
+
+    <!-- Main Links -->
+    <!-- Main Links -->
+    <nav class="flex flex-col gap-4">
+      {menuLinks.map((link, i) => (
+        <a 
+          href={link.href} 
+          class="menu-link group flex items-baseline gap-6"
+          style={`transition-delay: ${150 + i * 100}ms`}
+        >
+          <span class="text-xs font-mono text-foreground/50 group-hover:text-accent transition-colors">{link.index}</span>
+          <span class="text-6xl sm:text-7xl font-serif font-black tracking-tighter text-foreground group-hover:italic group-hover:text-accent transition-all">{link.name}</span>
+        </a>
+      ))}
+    </nav>
+
+    <!-- Footer -->
+    <div class="menu-footer flex justify-between items-end border-t border-border pt-8 delay-500">
+      <div class="flex flex-col gap-4">
+        <span class="text-xs font-bold uppercase tracking-widest opacity-50 text-foreground">Socials</span>
+        <div class="flex gap-6">
+          {SOCIALS.map(social => (
+            <a 
+              href={social.href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="text-foreground/60 hover:text-accent transition-colors"
+              aria-label={social.linkTitle}
+            >
+              <social.icon class="w-6 h-6" />
+            </a>
+          ))}
+        </div>
+      </div>
+      
+      <div class="flex gap-4">
+         <a href="/search" class="p-4 rounded-full border border-border hover:bg-muted text-foreground transition-colors" aria-label="Search">
+            <IconSearch class="w-6 h-6" />
+         </a>
+         {SITE.lightAndDarkMode && (
+           <button
+             id="theme-btn-mobile"
+             class="theme-toggle p-4 rounded-full border border-border hover:bg-muted text-foreground transition-colors relative overflow-hidden"
+             aria-label="Toggle Theme"
+           >
+             <IconMoon class="absolute top-[50%] left-[50%] -translate-[50%] w-6 h-6 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+             <IconSunHigh class="absolute top-[50%] left-[50%] -translate-[50%] w-6 h-6 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+           </button>
+         )}
+      </div>
+    </div>
+  </div>
+
 </header>
 
 <style>
+  /* Header Scroll Effect */
   #main-header.scrolled {
     border-bottom: 1px solid color-mix(in srgb, var(--border), transparent 50%);
     background-color: color-mix(in srgb, var(--background), transparent 20%);
@@ -180,6 +234,44 @@ const isActive = (path: string) => {
       padding-top: 1rem;
       padding-bottom: 1rem;
     }
+  }
+
+  /* Font Serif for Editorial Menu */
+  .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* 
+    MOBILE MENU STATE MANAGEMENT 
+    Using data-state for reliable transitions
+  */
+  #mobile-menu-overlay {
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  #mobile-menu-overlay[data-state="open"] {
+    transform: translateY(0);
+  }
+  
+  /* Link Animations */
+  #mobile-menu-overlay .menu-link,
+  #mobile-menu-overlay .menu-footer {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Trigger link animations when open */
+  #mobile-menu-overlay[data-state="open"] .menu-link,
+  #mobile-menu-overlay[data-state="open"] .menu-footer {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Lock body scroll */
+  :global(body.menu-open) {
+    overflow: hidden;
   }
 </style>
 
@@ -197,36 +289,68 @@ const isActive = (path: string) => {
     };
 
     window.addEventListener("scroll", handleScroll);
-    handleScroll(); // Initial check
+    handleScroll(); 
   }
 
-  setupHeader();
-  document.addEventListener("astro:after-swap", setupHeader);
-</script>
+  function initMobileMenu() {
+    const menuBtn = document.getElementById("menu-btn");
+    const overlay = document.getElementById("mobile-menu-overlay");
+    const closeIcon = document.getElementById("close-icon");
+    const menuIcon = document.getElementById("menu-icon");
 
-<script>
-  function toggleNav() {
-    const menuBtn = document.querySelector("#menu-btn");
-    const menuItems = document.querySelector("#menu-items");
-    const menuIcon = document.querySelector("#menu-icon");
-    const closeIcon = document.querySelector("#close-icon");
+    if (!menuBtn || !overlay || !closeIcon || !menuIcon) return;
 
-    if (!menuBtn || !menuItems || !menuIcon || !closeIcon) return;
+    // Remove old listeners to be safe (cloning)
+    const newBtn = menuBtn.cloneNode(true);
+    menuBtn.parentNode?.replaceChild(newBtn, menuBtn);
+    
+    newBtn.addEventListener("click", () => {
+      const isOpen = overlay.getAttribute("data-state") === "open";
+      const newState = isOpen ? "closed" : "open";
+      
+      // Update Overlay State
+      overlay.setAttribute("data-state", newState);
+      
+      // Update ARIA
+      newBtn.setAttribute("aria-expanded", String(!isOpen));
+      newBtn.setAttribute("aria-label", isOpen ? "Open Menu" : "Close Menu");
+      
+      // Toggle Body Scroll Lock
+      if (!isOpen) {
+        document.body.classList.add("menu-open");
+      } else {
+        document.body.classList.remove("menu-open");
+      }
 
-    menuBtn.addEventListener("click", () => {
-      const openMenu = menuBtn.getAttribute("aria-expanded") === "true";
+      // Toggle Icons
+      const cIcon = newBtn.querySelector("#close-icon");
+      const mIcon = newBtn.querySelector("#menu-icon");
+      if (cIcon && mIcon) {
+         cIcon.classList.toggle("hidden");
+         mIcon.classList.toggle("hidden");
+      }
+    });
 
-      menuBtn.setAttribute("aria-expanded", openMenu ? "false" : "true");
-      menuBtn.setAttribute("aria-label", openMenu ? "Open Menu" : "Close Menu");
-
-      menuItems.classList.toggle("hidden");
-      menuIcon.classList.toggle("hidden");
-      closeIcon.classList.toggle("hidden");
+    // Theme logic
+    const themeBtns = document.querySelectorAll(".theme-toggle");
+    themeBtns.forEach(btn => {
+      btn.onclick = () => {
+          const current = document.documentElement.getAttribute("data-theme");
+          const next = current === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          localStorage.setItem("theme", next);
+          if (window.theme) window.theme.setTheme(next);
+      };
     });
   }
 
-  toggleNav();
+  // Orchestrate execution
+  function init() {
+    setupHeader();
+    initMobileMenu();
+  }
 
-  // Runs on view transitions navigation
-  document.addEventListener("astro:after-swap", toggleNav);
+  // Run immediately and on view transitions
+  init();
+  document.addEventListener("astro:after-swap", init);
 </script>

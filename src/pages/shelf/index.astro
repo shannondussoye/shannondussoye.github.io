@@ -38,7 +38,7 @@ const categories = ["all", "movie", "book", "tv", "audio", "podcast"];
       {sortedItems.length > 0 ? (
         sortedItems.map((item, index) => (
           <section 
-            class="item-section h-svh w-full flex items-center justify-center snap-start relative px-6 group"
+            class="item-section min-h-svh w-full flex items-center justify-center snap-start relative px-6 py-24 sm:py-0 group"
             data-color={item.data.color}
             data-type={item.data.type}
           >
