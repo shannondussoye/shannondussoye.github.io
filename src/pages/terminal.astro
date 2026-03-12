@@ -4,7 +4,6 @@ import Header from "@/components/Header.astro";
 // @ts-ignore
 import Footer from "@/components/Footer.astro";
 import { SITE } from "@/config";
-import { getEntry } from "astro:content";
 
 // 1. Fetch single source of truth from resume.md
 import { getCollection } from "astro:content";
@@ -354,13 +353,11 @@ const title = "shannon@terminal";
   };
 
   // Data for the terminal
-  let blogPosts = [];
   let pulseFeed = [];
   let workExperienceData = SHANNON.work_experience;
 
   // Contact state machine
   let contactState = null; // null, 'name', 'email', 'message'
-  let contactData = { name: '', email: '', message: '' };
 
   // Fetch blog posts once per full session
   async function fetchFeeds() {
@@ -384,8 +381,6 @@ const title = "shannon@terminal";
         };
       });
 
-      // Filter for blog command
-      blogPosts = allItems.slice(0, 15);
       // Filter for pulse command (latest 3)
       pulseFeed = allItems.slice(0, 3);
 
@@ -405,7 +400,6 @@ const title = "shannon@terminal";
 
   function initTerminal() {
     output = document.getElementById('terminal-output');
-    const content = document.getElementById('terminal-content');
     input = document.getElementById('terminal-input');
     inputRow = document.getElementById('terminal-input-row');
     popup = document.getElementById('autocomplete-popup');
@@ -486,13 +480,6 @@ const title = "shannon@terminal";
       progressBar.style.opacity = progress > 0.01 ? '1' : '0';
       progressBar.style.transform = `scaleX(${progress})`;
     }
-  }
-
-  const promptEl = document.getElementById('terminal-prompt');
-  const DEFAULT_PROMPT = promptEl.innerHTML;
-
-  function setPrompt(html) {
-    promptEl.innerHTML = html;
   }
 
   function clear() {
