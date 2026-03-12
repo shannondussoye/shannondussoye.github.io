@@ -197,6 +197,7 @@ const title = "shannon@terminal";
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    overflow-x: hidden;
   }
 
   /* Dark mode specific terminal adjustment */
@@ -219,6 +220,7 @@ const title = "shannon@terminal";
 
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
+    height: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
@@ -289,6 +291,24 @@ const title = "shannon@terminal";
     animation: fadeIn 0.3s ease-out forwards;
     opacity: 0;
     transform: translateY(5px);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  /* Responsive ASCII and Code blocks */
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+    font-size: 8px; /* Default smaller for mobile ascii */
+    line-height: 1.1;
+  }
+
+  @media (min-width: 640px) {
+    pre {
+      font-size: 10px;
+      line-height: inherit;
+    }
   }
 
   @keyframes fadeIn {
