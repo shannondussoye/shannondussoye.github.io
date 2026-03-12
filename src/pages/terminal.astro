@@ -587,7 +587,7 @@ const title = "shannon@terminal";
       desc: "Display identity card",
       fn: () => {
         addLine(`
-<pre class="text-accent text-[10px] leading-tight mb-4">
+<pre class="text-accent text-[10px] leading-tight mb-4 hidden sm:block">
   ██████╗ ██╗  ██╗ █████╗ ███╗   ██╗███╗   ██╗ ██████╗ ███╗   ██╗
   ██╔════╝ ██║  ██║██╔══██╗████╗  ██║████╗  ██║██╔═══██╗████╗  ██║
   ╚█████╗  ███████║███████║██╔██╗ ██║██╔██╗ ██║██║   ██║██╔██╗ ██║
@@ -595,6 +595,7 @@ const title = "shannon@terminal";
   ██████╔╝ ██║  ██║██║  ██║██║ ╚████║██║ ╚████║╚██████╔╝██║ ╚████║
   ╚═════╝  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═══╝
 </pre>
+<div class="text-accent text-sm font-black tracking-widest mb-2 mt-2 sm:hidden uppercase flex items-center gap-2"><span class="w-1.5 h-1.5 bg-accent animate-pulse rounded-full"></span> // SYSTEM.IDENTITY</div>
         `);
         addLine(`<span class="term-main font-bold text-lg">${SHANNON_CLIENT.name}</span>`);
         addLine(`<span class="term-main opacity-60">${SHANNON_CLIENT.role}</span>`);
