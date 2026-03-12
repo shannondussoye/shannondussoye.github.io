@@ -1,0 +1,1125 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+// @ts-ignore
+import Footer from "@/components/Footer.astro";
+import { SITE } from "@/config";
+import { getEntry } from "astro:content";
+
+// 1. Fetch single source of truth from resume.md
+import { getCollection } from "astro:content";
+const resumeDocs = await getCollection("resume");
+const resumeEntry = resumeDocs[0];
+
+if (!resumeEntry) {
+  throw new Error("Could not find any entries in the 'resume' collection. Check src/data/resume.md");
+}
+
+const { data: resumeData, body } = resumeEntry;
+
+// 2. Prepare data for client-side use
+const SHANNON = {
+  ...resumeData,
+  summary: body // The Markdown body becomes the summary
+};
+
+const SOCIALS = resumeData.socials;
+const workExperience = resumeData.work_experience;
+
+const title = "shannon@terminal";
+---
+
+<Layout title={`${title} | ${SITE.title}`}>
+  <Header />
+  <main id="main-content" class="app-layout terminal-page flex flex-col h-[calc(100vh-6rem)] pt-2 pb-4 overflow-hidden relative">
+    
+    <!-- Decorative Status Bar -->
+    <div class="w-full mb-4 flex-none grid grid-cols-2 sm:grid-cols-4 gap-4 px-2 opacity-60">
+      <div class="border-l-2 border-accent pl-2">
+        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Connection</div>
+        <div class="text-[11px] font-mono text-main">SHANNON-TERMINAL-01</div>
+      </div>
+      <div class="border-l-2 border-accent/30 pl-2">
+        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Status</div>
+        <div class="flex items-center gap-1.5 text-[11px] font-mono text-main">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+          ENCRYPTED
+        </div>
+      </div>
+      <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
+        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Latency</div>
+        <div class="text-[11px] font-mono text-main" id="latency-val">24ms</div>
+      </div>
+      <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
+        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Uptime</div>
+        <div class="text-[11px] font-mono text-main" id="uptime-val">00:00:00</div>
+      </div>
+    </div>
+
+    <!-- Top Decorative Header -->
+    <div class="w-full mb-4 flex-none flex items-baseline justify-between gap-4 border-b border-white/5 pb-6">
+      <div class="flex flex-col">
+        <h1 class="text-3xl font-black uppercase tracking-tighter italic text-main strike-offset">Terminal Session</h1>
+        <div class="text-[10px] font-mono text-dim uppercase tracking-[0.2em] mt-1">Interactive Resume & Dashboard</div>
+      </div>
+      
+      <div class="hidden sm:block text-[10px] font-mono text-accent/60 leading-none text-right">
+        v2026.03.12<br/>
+        AUTH_LEVEL: ROOT
+      </div>
+    </div>
+
+    <!-- Main Terminal Window Container -->
+    <div class="w-full flex-1 min-h-0 flex flex-col">
+      <div id="terminal-window" class="terminal-container shadow-2xl overflow-hidden glassmorphism border border-white/10 relative w-full h-full">
+        <div class="terminal-header flex-none flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5 select-none">
+          <div class="flex gap-2">
+            <div class="w-3 h-3 rounded-full bg-[#ff5f57] cursor-pointer hover:opacity-80 transition-opacity"></div>
+            <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
+          </div>
+          <div class="text-[10px] uppercase tracking-widest text-white/40 font-bold">shannon@portfolio — terminal</div>
+          <div class="w-12"></div>
+        </div>
+        
+        <div id="terminal-output" class="p-6 overflow-y-auto font-mono text-sm leading-relaxed custom-scrollbar relative z-10 scroll-smooth flex-1">
+          <div id="terminal-content"></div>
+          <div id="terminal-input-row" class="mt-2 flex items-center gap-2 op-0 pointer-events-none transition-opacity duration-300">
+            <span class="prompt-text whitespace-nowrap" id="terminal-prompt">
+              <span class="text-accent font-bold">shannon</span><span class="term-dim opacity-40">@</span><span class="text-blue-400">portfolio</span><span class="term-main opacity-60">:</span><span class="text-purple-400">~</span><span class="text-accent/80">$</span>
+            </span>
+            <input 
+              id="terminal-input" 
+              type="text" 
+              class="bg-transparent border-none outline-none term-main w-full font-mono caret-accent" 
+              autocomplete="off" 
+              spellcheck="false" 
+              autofocus
+            />
+          </div>
+        </div>
+        <div id="scroll-progress" class="no-print"></div>
+
+        <div id="autocomplete-popup" class="hidden absolute bottom-20 left-6 right-6 bg-background/90 backdrop-blur-md border border-border rounded-xl overflow-hidden z-30 shadow-2xl">
+          <!-- Autocomplete items -->
+        </div>
+
+        <canvas id="matrix-canvas" class="hidden absolute inset-0 pointer-events-none z-1 rounded-2xl"></canvas>
+        
+        <!-- CRT Overlay Effects -->
+        <div class="crt-overlay pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-5 underline-none">
+          <div class="scanlines"></div>
+          <div class="flicker"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Dashboard Toolbar -->
+    <div class="w-full flex-none grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+      <!-- Command Quick Links -->
+      <div class="md:col-span-3 glassmorphism border border-border/50 p-4 rounded-2xl">
+        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+          Quick Access
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {[
+            { cmd: 'resume', desc: 'Summary' },
+            { cmd: 'skills', desc: 'Stack' },
+            { cmd: 'experience', desc: 'Work' },
+            { cmd: 'pulse', desc: 'Live' },
+            { cmd: 'matrix', desc: 'Glitch' }
+          ].map(item => (
+            <div 
+              class="group cursor-pointer flex flex-col p-2 rounded-xl hover:bg-accent/5 transition-all border border-transparent hover:border-accent/20"
+              onclick={`document.getElementById('terminal-input').value='${item.cmd}'; document.getElementById('terminal-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))`}
+            >
+              <div class="text-xs font-mono term-main group-hover:text-accent transition-colors flex justify-between items-baseline">
+                <span>{item.cmd}</span>
+                <span class="text-[8px] opacity-0 group-hover:opacity-40 transition-opacity italic">↵</span>
+              </div>
+              <div class="text-[9px] term-dim uppercase tracking-tighter mt-1">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Shortcuts Pad -->
+      <div class="glassmorphism border border-border/50 p-4 rounded-2xl flex flex-col justify-center">
+        <div class="text-[10px] font-black uppercase tracking-[0.2em] term-dim mb-3 text-center">System Shortcuts</div>
+        <div class="grid grid-cols-2 gap-y-2 text-[10px] font-mono">
+          <div class="term-dim/60 font-bold">TAB</div><div class="term-main/80 text-right">Auto-fill</div>
+          <div class="term-dim/60 font-bold">↑ / ↓</div><div class="term-main/80 text-right">History</div>
+          <div class="term-dim/60 font-bold">CTR+L</div><div class="term-main/80 text-right">Clear</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pinned Footer -->
+    <div class="mt-4 flex-none no-print">
+      <Footer />
+    </div>
+  </main>
+</Layout>
+
+<style>
+  :root {
+    --term-bg: rgba(253, 253, 253, 0.98);
+    --term-text: #282728;
+    --term-dim: rgba(40, 39, 40, 0.4);
+    --term-border: rgba(40, 39, 40, 0.1);
+  }
+
+  :global([data-theme="dark"]) {
+    --term-bg: rgba(13, 14, 18, 0.98);
+    --term-text: #eaedf3;
+    --term-dim: rgba(234, 237, 243, 0.4);
+    --term-border: rgba(234, 237, 243, 0.1);
+  }
+
+  :global(body) {
+    overflow-x: hidden;
+  }
+
+  .terminal-page {
+    background-image: radial-gradient(var(--border) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    background-position: center top;
+  }
+
+  .terminal-container {
+    width: 100%;
+    flex: 1; /* Grow to fill viewport gap */
+    background: var(--term-bg);
+    border-radius: 1.25rem;
+    border: 1px solid var(--term-border);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--term-text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Dark mode specific terminal adjustment */
+  :global([data-theme="dark"]) .terminal-container {
+    border-color: color-mix(in srgb, var(--accent), transparent 60%);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--accent), transparent 90%);
+  }
+
+  .glassmorphism {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .term-main { color: var(--term-text); }
+  .term-dim { color: var(--term-dim); }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--accent), transparent 70%);
+    border-radius: 10px;
+    border: 1px solid transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+
+  /* Reading Progress Line */
+  #scroll-progress {
+    position: absolute;
+    left: 0;
+    top: 44px; /* Just below the terminal header */
+    width: 100%;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.1s linear, opacity 0.3s ease;
+    z-index: 50;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* CRT Effects */
+  .crt-overlay {
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    background-size: 100% 2px, 3px 100%;
+  }
+
+  .scanlines {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, .1) 51%);
+    background-size: 100% 4px;
+    animation: scanlines 0.2s linear infinite;
+  }
+
+  @keyframes scanlines {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+  }
+
+  .flicker {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(18, 16, 16, 0.03);
+    animation: flicker 0.1s infinite;
+  }
+
+  @keyframes flicker {
+    0% { opacity: 0.1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 0.1; }
+  }
+
+  .op-0 { opacity: 0; }
+  .op-1 { opacity: 1; }
+
+  /* Animation for lines */
+  .terminal-line {
+    animation: fadeIn 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 0 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--accent), transparent 90%);
+    color: var(--accent);
+    margin-right: 0.5rem;
+    border: 1px solid color-mix(in srgb, var(--accent), transparent 80%);
+  }
+
+  .skill-bar-bg {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    width: 200px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 10px;
+  }
+
+  .skill-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    width: 0;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fillBar {
+    from { width: 0; }
+  }
+  .animate-fill {
+    animation: fillBar 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>
+
+<script is:inline define:vars={{ SOCIALS, SHANNON, workExperience }}>
+  // 2. Prepare data for client-side use
+  const processedCompetencies = SHANNON.core_competencies.map(comp => {
+    const parts = comp.split(':');
+    const category = parts[0] ? parts[0].trim() : "Other";
+    const skillsString = parts[1] ? parts[1].trim() : "";
+    const skills = skillsString.split('•').map(s => s.trim()).filter(Boolean);
+    return { category, skills };
+  });
+
+  const SHANNON_CLIENT = {
+    ...SHANNON,
+    core_competencies: processedCompetencies
+  };
+
+  // Data for the terminal
+  let blogPosts = [];
+  let pulseFeed = [];
+  let workExperienceData = SHANNON.work_experience;
+
+  // Contact state machine
+  let contactState = null; // null, 'name', 'email', 'message'
+  let contactData = { name: '', email: '', message: '' };
+
+  // Fetch blog posts once per full session
+  async function fetchFeeds() {
+    try {
+      // 1. Fetch RSS feeds
+      const rssRes = await fetch('/rss.xml');
+      const xml = await rssRes.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, "text/xml");
+      const items = doc.querySelectorAll("item");
+      
+      const allItems = Array.from(items).map(item => {
+        const fullTitle = item.querySelector("title").textContent;
+        const category = item.querySelector("category")?.textContent;
+        return {
+          title: fullTitle,
+          displayDate: new Date(item.querySelector("pubDate").textContent).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          recommendation: item.querySelector("description")?.textContent.replace(/<[^>]*>/g, '').substring(0, 100),
+          link: item.querySelector("link").textContent,
+          category: category
+        };
+      });
+
+      // Filter for blog command
+      blogPosts = allItems.slice(0, 15);
+      // Filter for pulse command (latest 3)
+      pulseFeed = allItems.slice(0, 3);
+
+      // Removed: 2. Fetch Curated Projects (now passed via define:vars)
+    } catch (e) {
+      console.error('Terminal Data Error:', e);
+    }
+  }
+
+  // SHANNON object is now passed via define:vars, no longer hardcoded here.
+  // SOCIALS object is now passed via define:vars, no longer hardcoded here.
+
+  let output, input, inputRow, popup;
+  let history = [];
+  let historyIndex = -1;
+  let uptimeInterval, latencyInterval;
+
+  function initTerminal() {
+    output = document.getElementById('terminal-output');
+    const content = document.getElementById('terminal-content');
+    input = document.getElementById('terminal-input');
+    inputRow = document.getElementById('terminal-input-row');
+    popup = document.getElementById('autocomplete-popup');
+    
+    if (!output || !input) return;
+
+    // Clear existing intervals
+    if (uptimeInterval) clearInterval(uptimeInterval);
+    if (latencyInterval) clearInterval(latencyInterval);
+
+    history = [];
+    historyIndex = -1;
+
+    // Re-attach listeners
+    input.addEventListener('keydown', handleInput);
+    popup.addEventListener('click', handlePopupClick);
+    
+    // Focus management that doesn't jump on interactive clicks
+    const focusListener = (e) => {
+      const target = e.target;
+      if (target && typeof target.closest === 'function') {
+        const isInteractive = target.closest('button, a, input, [onclick], .no-focus-trigger');
+        if (!isInteractive) {
+          input.focus({ preventScroll: true });
+        }
+      } else if (!target) {
+        input.focus({ preventScroll: true });
+      }
+    };
+    
+    // Use a named function for easier cleanup/management
+    document.removeEventListener('click', focusListener); // Safety
+    document.addEventListener('click', focusListener);
+    
+    // Add scroll tracking once
+    output.removeEventListener('scroll', handleScrollUpdate); // Safety
+    output.addEventListener('scroll', handleScrollUpdate);
+    
+    const closeBtn = document.querySelector('.bg-\\[\\#ff5f57\\]');
+    if (closeBtn) {
+      closeBtn.onclick = () => COMMANDS.exit.fn();
+    }
+
+    fetchFeeds();
+    boot();
+    startStats();
+  }
+
+  // Render Helpers
+  function addLine(text, type = 'default', autoScroll = true, delay = 0) {
+    const div = document.createElement('div');
+    const content = document.getElementById('terminal-content');
+    div.className = `terminal-line mb-1 ${type}`;
+    
+    if (type === 'prompt-echo') {
+      div.innerHTML = `<span class="text-accent font-bold">shannon</span><span class="term-dim opacity-40">@</span><span class="text-blue-400">portfolio</span><span class="term-main opacity-60">:</span><span class="text-purple-400">~</span><span class="text-accent/80">$</span> <span class="term-main font-bold">${text}</span>`;
+    } else {
+      div.innerHTML = text;
+    }
+    
+    if (delay > 0) {
+      setTimeout(() => {
+        content.appendChild(div);
+        if (autoScroll) output.scrollTop = output.scrollHeight;
+      }, delay);
+    } else {
+      content.appendChild(div);
+      if (autoScroll) output.scrollTop = output.scrollHeight;
+    }
+
+    return div;
+  }
+
+  function handleScrollUpdate() {
+    const progress = output.scrollTop / (output.scrollHeight - output.clientHeight);
+    const progressBar = document.getElementById('scroll-progress');
+    if (progressBar) {
+      progressBar.style.opacity = progress > 0.01 ? '1' : '0';
+      progressBar.style.transform = `scaleX(${progress})`;
+    }
+  }
+
+  const promptEl = document.getElementById('terminal-prompt');
+  const DEFAULT_PROMPT = promptEl.innerHTML;
+
+  function setPrompt(html) {
+    promptEl.innerHTML = html;
+  }
+
+  function clear() {
+    document.getElementById('terminal-content').innerHTML = '';
+  }
+
+  // Simple Markdown Parser for Terminal Session
+  function parseMarkdown(md) {
+    if (!md) return '';
+    
+    // 1. Process block elements
+    let html = md
+      // Headers
+      .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-black text-main uppercase italic mb-4 mt-6 selection:bg-accent">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-black text-accent uppercase tracking-tighter mb-1 mt-4 flex items-center gap-2"><span class="opacity-40">//</span> $1</h2>')
+      // Lists (unordered)
+      .replace(/^\- (.*$)/gm, '<div class="flex gap-3 mb-2 ml-4 selection:bg-accent selection:text-white"><span class="text-accent ring-1 ring-accent/30 w-1 h-1 rounded-full mt-2 flex-none"></span><span class="term-main opacity-80">$1</span></div>');
+
+    // 2. Process inline elements
+    html = html
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<b class="text-accent font-bold">$1</b>')
+      // Italic
+      .replace(/\*(.*?)\*/g, '<i class="italic opacity-80">$1</i>')
+      // Links
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-blue-400 underline underline-offset-4 decoration-current/30 hover:text-accent hover:decoration-accent transition-all">$1</a>');
+
+    // 3. Final cleanup: wrap loose text blocks in paragraphs
+    return html.split('\n\n').map(p => {
+      p = p.trim();
+      if (!p) return '';
+      // If it already looks like a block element, don't wrap in <p>
+      if (p.startsWith('<h') || p.startsWith('<div')) return p;
+      return `<p class="mb-5 leading-relaxed opacity-90">${p}</p>`;
+    }).filter(Boolean).join('');
+  }
+
+  // Toggle Function for Experience Details
+  window.toggleDetails = (id, btn, event) => {
+    if (event) event.stopPropagation();
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isHidden = el.classList.contains('hidden');
+    el.classList.toggle('hidden');
+    
+    if (isHidden) {
+      btn.innerHTML = '<span class="text-accent ring-1 ring-accent/30 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex"><span class="w-1 h-1 rounded-full bg-accent"></span> HIDE DETAILS</span>';
+    } else {
+      btn.innerHTML = '<span class="text-accent/60 ring-1 ring-accent/20 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex"><span class="w-1 h-1 rounded-full bg-accent/40"></span> SHOW DETAILS</span>';
+    }
+  };
+
+  // Commands
+  const COMMANDS = {
+    help: {
+      desc: "Show available commands",
+      fn: (args) => {
+        const showAll = args && args[0] === '--all';
+        
+        addLine('<span class="text-accent font-bold">CORE INTERFACE</span>', 'mb-2');
+        Object.keys(COMMANDS).sort().forEach(cmd => {
+          if (COMMANDS[cmd].hidden || cmd === 'help') return;
+          addLine(`<span class="text-blue-400 w-24 inline-block font-bold">${cmd}</span> <span class="term-dim opacity-60">— ${COMMANDS[cmd].desc}</span>`);
+        });
+        
+        // Add help itself at the end of core
+        addLine(`<span class="text-blue-400 w-24 inline-block font-bold">help</span> <span class="term-dim opacity-60">— Show available commands</span>`);
+
+        if (showAll) {
+          addLine('<span class="text-purple-400 font-bold mt-4 block">// SYSTEM OVERRIDES (CLASSIFIED)</span>', 'mb-2');
+          Object.keys(COMMANDS).sort().forEach(cmd => {
+            if (!COMMANDS[cmd].hidden) return;
+            addLine(`<span class="text-purple-300 w-24 inline-block font-bold opacity-60">${cmd}</span> <span class="term-dim opacity-40">— ${COMMANDS[cmd].desc}</span>`);
+          });
+        } else {
+          addLine('<div class="mt-4 p-2 bg-accent/5 rounded border border-accent/10 text-[10px] term-dim flex justify-between items-center group cursor-pointer" onclick="document.getElementById(\'terminal-input\').value=\'help --all\'; document.getElementById(\'terminal-input\').dispatchEvent(new KeyboardEvent(\'keydown\', {key: \'Enter\'}))"><span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-accent/40 group-hover:bg-accent animate-pulse"></span> Classified system overrides detected...</span> <span class="opacity-0 group-hover:opacity-100 font-mono tracking-tighter transition-opacity text-accent">Type "help --all" to show</span></div>');
+        }
+        
+        addLine('', 'mt-2 text-[10px] opacity-40 italic');
+        addLine('Hint: Use "ls" and "cat" to explore the kernel filesystem.', 'term-dim');
+      }
+    },
+    whoami: {
+      hidden: true,
+      desc: "Display identity card",
+      fn: () => {
+        addLine(`
+<pre class="text-accent text-[10px] leading-tight mb-4">
+  ██████╗ ██╗  ██╗ █████╗ ███╗   ██╗███╗   ██╗ ██████╗ ███╗   ██╗
+  ██╔════╝ ██║  ██║██╔══██╗████╗  ██║████╗  ██║██╔═══██╗████╗  ██║
+  ╚█████╗  ███████║███████║██╔██╗ ██║██╔██╗ ██║██║   ██║██╔██╗ ██║
+  ╚═══██╗ ██╔══██║██╔══██║██║╚██╗██║██║╚██╗██║██║   ██║██║╚██╗██║
+  ██████╔╝ ██║  ██║██║  ██║██║ ╚████║██║ ╚████║╚██████╔╝██║ ╚████║
+  ╚═════╝  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═══╝
+</pre>
+        `);
+        addLine(`<span class="term-main font-bold text-lg">${SHANNON_CLIENT.name}</span>`);
+        addLine(`<span class="term-main opacity-60">${SHANNON_CLIENT.role}</span>`);
+        addLine(`<span class="term-dim">${SHANNON_CLIENT.location}</span>`, 'mb-4');
+        addLine(`<span class="text-accent">Email:</span> <span class="term-main font-medium">${SHANNON_CLIENT.email}</span>`);
+        addLine(`<span class="text-accent">GitHub:</span> <span class="term-main font-medium">${SHANNON_CLIENT.github}</span>`);
+        addLine('', 'mt-2');
+      }
+    },
+    bio: {
+      hidden: true,
+      desc: "Bio summary",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// BIOGRAPHY</span>', 'mb-2');
+        SHANNON_CLIENT.summary.split('\n').forEach(line => addLine(line, 'term-main opacity-80'));
+        addLine('', 'mt-2');
+      }
+    },
+    skills: {
+      desc: "Technical skills",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// TECHNICAL STACK</span>', 'mb-4');
+        
+        SHANNON_CLIENT.core_competencies.forEach((skill, i) => {
+          setTimeout(() => {
+            addLine(`
+              <div class="flex flex-col mb-4 leading-normal">
+                <div class="flex justify-between items-center mb-1 max-w-[500px]">
+                  <span class="term-main font-bold tracking-tight text-accent opacity-90">${skill.category}</span>
+                </div>
+                <div class="flex flex-wrap gap-2 group w-full max-w-[600px] !mx-0">
+                  ${skill.skills.map(s => `<span class="px-2 py-0.5 bg-accent/5 rounded border border-accent/10 text-[10px] term-main hover:border-accent/40 transition-colors uppercase tracking-tight">${s}</span>`).join('')}
+                </div>
+              </div>
+            `);
+          }, i * 150);
+        });
+      }
+    },
+    experience: {
+      desc: "Detailed work experience",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// PROFESSIONAL EXPERIENCE</span>', 'mb-6');
+        
+        if (workExperienceData.length === 0) {
+          addLine('<span class="term-dim italic">Loading experience records...</span>');
+        } else {
+          workExperienceData.forEach((exp, idx) => {
+            const detailId = `exp-detail-cmd-${idx}`;
+            addLine(`
+              <div class="mb-8 pl-4 border-l-2 border-accent/20 transition-all hover:border-accent group/exp">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-baseline mb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-main text-lg font-black uppercase tracking-tight">${exp.role}</span>
+                    <button 
+                      onclick="window.toggleDetails('${detailId}', this, event)"
+                      class="focus:outline-none no-print"
+                    >
+                      <span class="text-accent/60 ring-1 ring-accent/20 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex">
+                        <span class="w-1 h-1 rounded-full bg-accent/40"></span> SHOW DETAILS
+                      </span>
+                    </button>
+                  </div>
+                  <span class="text-accent font-mono text-[10px] uppercase tracking-widest">${exp.duration}</span>
+                </div>
+                <div class="text-blue-400 font-bold mb-3">${exp.company}</div>
+                <div class="term-main opacity-80 mb-4 leading-relaxed italic">"${exp.description.trim()}"</div>
+                
+                <ul id="${detailId}" class="space-y-2 hidden">
+                  ${exp.points.map(point => `
+                    <li class="flex gap-3 text-sm">
+                      <span class="text-accent mt-1">›</span>
+                      <span class="term-main opacity-90">${point}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            `);
+          });
+        }
+      }
+    },
+    socials: {
+      hidden: true,
+      desc: "Social links",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// CONNECT</span>', 'mb-2');
+        SOCIALS.forEach(social => {
+          addLine(`<span class="text-blue-400 w-24 inline-block font-bold">${social.name}</span> <a href="${social.href}" target="_blank" class="term-main hover:text-accent font-bold underline decoration-dotted">${social.href}</a>`);
+        });
+        addLine('', 'mt-2');
+      }
+    },
+    ls: {
+       hidden: true,
+       desc: "List files",
+       fn: () => {
+         addLine('<span class="text-blue-400 font-bold">resume.md  blog/</span>');
+       }
+    },
+    cat: {
+      hidden: true,
+      desc: "View file content (e.g., cat resume.md)",
+      fn: (args) => {
+        if (!args[0]) return addLine('Usage: cat [filename]', 'text-red-400');
+        if (args[0] === 'resume.md') return COMMANDS.resume.fn();
+        addLine(`cat: ${args[0]}: No such file or directory`, 'text-red-400');
+      }
+    },
+    clear: {
+      desc: "Clear terminal",
+      fn: () => clear()
+    },
+    history: {
+      hidden: true,
+      desc: "Show command history",
+      fn: () => history.forEach((h, i) => addLine(`${i + 1}  ${h}`, 'term-dim opacity-60'))
+    },
+    resume: {
+      desc: "Full overview (Bio + Skills + Work)",
+      fn: () => {
+        clear();
+        
+        // 1. Header
+        addLine(`
+          <div class="mb-4 border-b border-accent/20 pb-3">
+            <div class="flex flex-col md:flex-row justify-between items-center sm:items-baseline gap-4">
+              <div>
+                <h1 class="text-3xl font-black text-main tracking-tighter uppercase italic line-height-tight leading-none">${SHANNON_CLIENT.name}</h1>
+                <p class="text-accent font-mono text-[10px] sm:text-xs mt-1 selection:bg-accent selection:text-white uppercase tracking-widest">${SHANNON_CLIENT.role} — ${SHANNON_CLIENT.location}</p>
+              </div>
+              <div class="flex flex-wrap gap-2 sm:justify-end no-print">
+                ${SOCIALS.map(s => `
+                  <a href="${s.href}" target="_blank" class="px-2 py-0.5 bg-accent/5 rounded-md border border-accent/10 text-[8px] term-dim hover:text-accent hover:border-accent transition-all font-black uppercase tracking-widest flex items-center gap-1 group/btn">
+                    <span class="w-1 h-1 rounded-full bg-current opacity-40 group-hover/btn:opacity-100 transition-opacity"></span>
+                    ${s.name}
+                  </a>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `, 'animate-fade-in', false);
+
+        // 2. PROFILE (Parsed Markdown - Summary part)
+        const summaryMatch = SHANNON_CLIENT.summary.split(/^## /m)[0];
+        addLine('<div class="text-lg font-black text-accent/80 uppercase tracking-[0.2em] mb-1 flex items-center gap-3 font-mono"><span class="text-accent animate-pulse">//</span> PROFILE</div>', 'animate-fade-in', false);
+        addLine(`
+          <div class="term-main text-[15px] leading-relaxed selection:bg-accent selection:text-white max-w-3xl font-mono mb-2">
+            ${parseMarkdown(summaryMatch)}
+          </div>
+        `, 'animate-fade-in', false);
+
+        // 3. EMPLOYMENT HISTORY
+        addLine('<div class="text-lg font-black text-accent/80 uppercase tracking-[0.2em] mb-1 mt-4 flex items-center gap-3 font-mono"><span class="text-accent animate-pulse">//</span> EMPLOYMENT_HISTORY</div>', 'animate-fade-in', false);
+        
+        if (workExperienceData.length === 0) {
+           addLine('<span class="term-dim italic font-mono">Waiting for historical data...</span>', 'default', false);
+        } else {
+          // Employment History: Macquarie, CBA, Equifax (indices 0-3 based on current resume.md order)
+          const highLevelRoles = workExperienceData.slice(0, 4);
+          highLevelRoles.forEach((exp, idx) => {
+             const detailId = `exp-detail-resume-${idx}`;
+             addLine(`
+               <div class="relative pl-6 pb-3 last:pb-2 group/exp font-mono">
+                 <div class="absolute left-[3px] top-2 bottom-0 w-[1px] bg-accent/10 group-last/exp:bg-transparent"></div>
+                 <div class="absolute left-0 top-1.5 w-[7px] h-[7px] rounded-full bg-accent border-2 border-term-bg z-10 ring-4 ring-transparent group-hover/exp:ring-accent/10 transition-all"></div>
+                 
+                 <div class="flex flex-col sm:flex-row justify-between items-start gap-1 mb-1">
+                   <div class="flex flex-wrap items-center gap-x-2">
+                     <h3 class="term-main text-base font-black uppercase tracking-tighter">${exp.role}</h3>
+                     <button onclick="window.toggleDetails('${detailId}', this, event)" class="focus:outline-none no-print">
+                        <span class="text-accent/60 ring-1 ring-accent/20 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex">
+                          <span class="w-1 h-1 rounded-full bg-accent/40"></span> SHOW DETAILS
+                        </span>
+                      </button>
+                   </div>
+                   <span class="term-dim font-mono text-[9px] opacity-40 uppercase tracking-widest">${exp.duration}</span>
+                 </div>
+                 <div class="text-blue-400 font-bold text-xs tracking-tight mb-1">${exp.company}</div>
+                 <p class="term-main opacity-80 text-[13px] mb-2 leading-relaxed max-w-2xl font-medium italic">"${exp.description.trim()}"</p>
+                 <ul id="${detailId}" class="space-y-1 mb-2 hidden">
+                   ${exp.points.map(point => `
+                     <li class="flex gap-2 text-[12px]">
+                       <span class="text-accent/60 mt-0.5">·</span>
+                       <span class="term-main opacity-70 leading-snug">${point}</span>
+                     </li>
+                   `).join('')}
+                 </ul>
+               </div>
+             `, 'animate-fade-in', false);
+          });
+        }
+        addLine('', 'mb-2', false);
+
+        // 4. Previous positions held
+        addLine('<div class="text-lg font-black text-accent/80 uppercase tracking-[0.2em] mb-1 mt-4 flex items-center gap-3 font-mono"><span class="text-accent animate-pulse">//</span> PREVIOUS_POSITIONS_HELD</div>', 'animate-fade-in', false);
+        
+        const previousRoles = workExperienceData.slice(4);
+        previousRoles.forEach((exp, idx) => {
+           const detailId = `exp-prev-detail-resume-${idx}`;
+           addLine(`
+            <div class="relative pl-6 pb-2 last:pb-1 group/exp font-mono">
+              <div class="absolute left-[3px] top-2 bottom-0 w-[1px] bg-accent/10 group-last/exp:bg-transparent"></div>
+              <div class="absolute left-0 top-1.5 w-[7px] h-[7px] rounded-full bg-accent border-2 border-term-bg z-10 ring-4 ring-transparent group-hover/exp:ring-accent/10 transition-all"></div>
+              
+              <div class="flex flex-col sm:flex-row justify-between items-start gap-1 mb-1">
+                <div class="flex flex-wrap items-center gap-x-2">
+                  <h3 class="term-main text-sm font-bold uppercase tracking-tighter">${exp.role}</h3>
+                  <button onclick="window.toggleDetails('${detailId}', this, event)" class="focus:outline-none no-print">
+                     <span class="text-accent/60 ring-1 ring-accent/20 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex">
+                       <span class="w-1 h-1 rounded-full bg-accent/40"></span> SHOW DETAILS
+                     </span>
+                   </button>
+                </div>
+                <span class="term-dim font-mono text-[9px] opacity-40 uppercase tracking-widest">${exp.duration}</span>
+              </div>
+              <div class="text-blue-400 font-bold text-[11px] tracking-tight mb-1">${exp.company}</div>
+              <ul id="${detailId}" class="space-y-1 mb-2 hidden">
+                ${exp.points.map(point => `
+                  <li class="flex gap-2 text-[12px]">
+                    <span class="text-accent/60 mt-0.5">·</span>
+                    <span class="term-main opacity-70 leading-snug">${point}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+           `, 'animate-fade-in', false);
+        });
+        addLine('', 'mb-2', false);
+
+        // 5. CORE COMPETENCIES (Bulleted List)
+        addLine('<div class="text-lg font-black text-accent/80 uppercase tracking-[0.2em] mb-1 mt-4 flex items-center gap-3 font-mono"><span class="text-accent animate-pulse">//</span> CORE_COMPETENCIES</div>', 'animate-fade-in', false);
+        addLine(`
+          <div class="space-y-4 font-mono">
+            ${SHANNON_CLIENT.core_competencies.map(comp => {
+                return `
+                  <div class="group/comp">
+                    <div class="text-accent font-black text-[11px] uppercase tracking-widest mb-1 opacity-80 group-hover/comp:opacity-100 transition-opacity underline decoration-accent/20 underline-offset-4">${comp.category}</div>
+                    <div class="term-main text-sm leading-relaxed opacity-70 group-hover/comp:opacity-90 transition-opacity">${comp.skills.join(' • ')}</div>
+                  </div>
+                `;
+              }).join('')}
+          </div>
+        `, 'animate-fade-in', false);
+        addLine('', 'mb-2', false);
+
+        // 6. QUALIFICATION AND EDUCATION
+        const educationBlock = SHANNON_CLIENT.summary.split(/^## Education/m)[1] || '';
+        if (educationBlock) {
+          addLine('<div class="text-lg font-black text-accent/80 uppercase tracking-[0.2em] mb-1 mt-4 flex items-center gap-3 font-mono"><span class="text-accent animate-pulse">//</span> QUALIFICATION_AND_EDUCATION</div>', 'animate-fade-in', false);
+          addLine(`
+            <div class="term-main text-[15px] leading-relaxed selection:bg-accent selection:text-white max-w-3xl font-mono">
+              ${parseMarkdown(educationBlock.replace(/^ & Qualifications/m, ''))}
+            </div>
+          `, 'animate-fade-in', false);
+          addLine('', 'mb-2', false);
+        }
+
+        // 5. Final Footer
+        addLine(`
+          <div class="mt-16 pt-8 border-t border-accent/10 flex flex-col sm:flex-row justify-between items-center gap-6 no-print">
+            <div class="flex flex-col">
+               <span class="term-dim text-[10px] italic">Document generated by ShannonOS Kernel ${new Date().getFullYear()}</span>
+               <span class="text-[9px] term-dim opacity-30 font-mono tracking-tighter uppercase mt-1">Hash: ${Math.random().toString(16).substring(2, 10).toUpperCase()} // SIGNED_ROOT</span>
+            </div>
+            <div class="flex gap-6 items-center">
+               <button onclick="window.print()" class="text-[10px] bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full text-accent hover:bg-accent hover:text-white transition-all font-bold uppercase tracking-widest shadow-lg shadow-accent/5">Print Master PDF</button>
+               <button onclick="document.getElementById('terminal-input').value='clear'; document.getElementById('terminal-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))" class="text-[10px] term-dim hover:text-accent font-black uppercase tracking-[0.2em] transition-colors border-b border-transparent hover:border-accent pb-1">[ RETURN_TO_CLI ]</button>
+            </div>
+          </div>
+        `, 'pb-16 animate-fade-in', false);
+
+        // FINAL STEP: Reset scroll to top
+        setTimeout(() => {
+          output.scrollTop = 0;
+        }, 100);
+      }
+    },
+    matrix: {
+      desc: "🐇 Wake up, Neo",
+      fn: () => {
+        const canvas = document.getElementById('matrix-canvas');
+        canvas.classList.remove('hidden');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.parentElement.offsetWidth;
+        canvas.height = canvas.parentElement.offsetHeight;
+        
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"\'#&_(),.;:?!\\|{}<>[]^~";
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array.from({ length: columns }).fill(1);
+        
+        const interval = setInterval(() => {
+          ctx.fillStyle = "rgba(13, 14, 18, 0.05)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+          ctx.fillStyle = accentColor || "#ff6b01";
+          ctx.font = fontSize + "px monospace";
+          
+          for (let i = 0; i < drops.length; i++) {
+            const text = chars.charAt(Math.floor(Math.random() * chars.length));
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+          }
+        }, 33);
+        
+        addLine('Matrix protocol initiated...', 'text-accent');
+        addLine('Press any key to exit.', 'term-dim opacity-60');
+        
+        const stopMatrix = (e) => {
+          // Prevent the Enter key that started the command from immediately stopping it
+          if (e.key === 'Enter') return;
+          
+          clearInterval(interval);
+          canvas.classList.add('hidden');
+          window.removeEventListener('keydown', stopMatrix);
+        };
+        // Use a small timeout to ensure the Enter key event has finished bubbling
+        setTimeout(() => {
+          window.addEventListener('keydown', stopMatrix);
+        }, 100);
+      }
+    },
+    pulse: {
+      desc: "Latest interactive pulse",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// LIVE PULSE (Latest Activity)</span>', 'mb-2');
+        if (pulseFeed.length === 0) {
+          addLine('<span class="term-dim italic">Waiting for heartbeat...</span>');
+        } else {
+          pulseFeed.forEach(item => {
+            const category = item.category || 'Feed';
+            addLine(`
+              <div class="mb-3 pl-4 border-l border-accent/20">
+                <div class="flex justify-between items-baseline mb-1">
+                  <span class="term-main font-bold">› ${item.title}</span>
+                  <span class="term-dim text-[9px] font-mono">${item.displayDate}</span>
+                </div>
+                <div class="text-[10px] term-dim opacity-80 italic mb-1">[${category.toUpperCase()}] "${item.recommendation.substring(0, 70)}..."</div>
+                <a href="${item.link}" target="_blank" class="text-accent text-[9px] hover:underline font-bold">View Source ↗</a>
+              </div>
+            `);
+          });
+        }
+        addLine('', 'mt-2 text-[10px] opacity-40 italic');
+        addLine('Source: Unified activity aggregator', 'term-dim');
+      }
+    },
+    /* contact: {
+      desc: "Send a secure message",
+      fn: () => {
+        addLine('<span class="text-accent font-bold">// SECURE MESSAGING ENCRYPTED</span>', 'mb-2');
+        addLine('Please provide your details below.', 'term-dim opacity-60 mb-4');
+        contactState = 'name';
+        setPrompt('<span class="text-accent font-mono font-bold">Name > </span>');
+      }
+    }, */
+    sudo: {
+      hidden: true,
+      desc: "Superuser access",
+      fn: () => addLine('Nice try, but I am the only root here. 😉', 'text-red-400')
+    },
+    exit: {
+      hidden: true,
+      desc: "Close terminal",
+      fn: () => {
+        addLine('Goodbye, Shannon.', 'text-white/40');
+        setTimeout(() => window.location.href = '/', 1000);
+      }
+    }
+  };
+
+  function handleCommand(raw) {
+    const trimmed = raw.trim();
+    if (!trimmed && !contactState) return;
+
+    // Contact State Machine Handling
+    /* if (contactState) {
+      if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'quit') {
+        addLine('Messaging aborted.', 'term-dim opacity-40 mt-1');
+        contactState = null;
+        contactData = { name: '', email: '', message: '' };
+        setPrompt(DEFAULT_PROMPT);
+        return;
+      }
+
+      addLine(trimmed, 'term-main font-bold mb-2');
+      
+      if (contactState === 'name') {
+        contactData.name = trimmed;
+        contactState = 'email';
+        setPrompt('<span class="text-accent font-mono font-bold">Email > </span>');
+      } else if (contactState === 'email') {
+        contactData.email = trimmed;
+        contactState = 'message';
+        setPrompt('<span class="text-accent font-mono font-bold">Message > </span>');
+      } else if (contactState === 'message') {
+        contactData.message = trimmed;
+        addLine('Sending message...', 'text-accent mt-2');
+        setPrompt(DEFAULT_PROMPT);
+        
+        setTimeout(() => {
+          addLine('<span class="text-green-400 font-bold">✓ Message encrypted and sent successfully.</span>', 'mt-1 mb-4');
+          addLine(`[SESSION LOG]: Message from ${contactData.name} (${contactData.email}) queued for delivery.`, 'term-dim italic opacity-40 text-[10px]');
+          contactState = null;
+          contactData = { name: '', email: '', message: '' };
+        }, 1500);
+      }
+      return;
+    } */
+    
+    if (!trimmed) return;
+    
+    history.push(trimmed);
+    historyIndex = history.length;
+    
+    addLine(trimmed, 'prompt-echo');
+    
+    const [cmdName, ...args] = trimmed.toLowerCase().split(' ');
+    
+    if (COMMANDS[cmdName]) {
+      COMMANDS[cmdName].fn(args);
+    } else {
+      addLine(`Command not found: ${cmdName}. Type <span class="text-accent font-bold cursor-pointer" onclick="document.getElementById('terminal-input').value='help'; document.getElementById('terminal-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))">help</span> to see available commands.`, 'text-red-400');
+    }
+  }
+
+  // Input listeners
+  function handleInput(e) {
+    if (e.key === 'Enter') {
+      const val = input.value;
+      input.value = '';
+      handleCommand(val);
+      popup.classList.add('hidden');
+    }
+    
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        historyIndex--;
+        input.value = history[historyIndex];
+      }
+    }
+    
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        input.value = history[historyIndex];
+      } else {
+        historyIndex = history.length;
+        input.value = '';
+      }
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const val = input.value.toLowerCase();
+      if (!val) return;
+      
+      const matches = Object.keys(COMMANDS).filter(c => c.startsWith(val));
+      if (matches.length === 1) {
+        input.value = matches[0];
+      } else if (matches.length > 1) {
+        // Show popup
+        popup.innerHTML = matches.map(m => `<div class="p-2 hover:bg-accent/20 cursor-pointer text-white border-b border-white/5 last:border-0">${m}</div>`).join('');
+        popup.classList.remove('hidden');
+      }
+    }
+  }
+
+  // Autocomplete popup click
+  function handlePopupClick(e) {
+    if (e.target.innerText) {
+      input.value = e.target.innerText;
+      popup.classList.add('hidden');
+      input.focus();
+    }
+  }
+
+    // Fixed: Redundant listener removed. Focus handled in initTerminal.
+
+  // Boot Sequence
+  async function boot() {
+    input.disabled = true;
+    const lines = [
+      { t: "Establishing secure connection to portfolio...", d: 100 },
+      { t: "Mounting shannon_dussoye_kernel...", d: 400 },
+      { t: "Loading data modules: experience, skills, blog...", d: 700 },
+      { t: "System initialized. Welcome to Shannon's terminal.", d: 1100, type: 'text-accent font-bold' },
+      { t: "--------------------------------------------------", d: 1200, type: 'term-dim opacity-20' },
+      { t: "Type 'help' to get started.", d: 1300, type: 'term-dim' },
+      { t: "", d: 1400 }
+    ];
+
+    for (const line of lines) {
+      await new Promise(r => setTimeout(r, line.d));
+      addLine(line.t, line.type || 'term-main opacity-80');
+    }
+
+    // Render Identity immediately as part of the session start
+    await new Promise(r => setTimeout(r, 400));
+    COMMANDS.whoami.fn();
+    addLine('<span class="term-dim">Type </span><span class="text-accent font-bold cursor-pointer" onclick="document.getElementById(\'terminal-input\').value=\'help\'; document.getElementById(\'terminal-input\').dispatchEvent(new KeyboardEvent(\'keydown\', {key: \'Enter\'}))">help</span><span class="term-dim"> to explore more commands.</span>', 'mt-2 mb-4');
+
+    // Finally show the prompt and allow input
+    inputRow.classList.remove('op-0', 'pointer-events-none');
+    inputRow.classList.add('op-1');
+    input.disabled = false;
+    input.focus();
+  }
+
+  // Dynamic Uptime & Latency
+  function startStats() {
+    let startTime = Date.now();
+    uptimeInterval = setInterval(() => {
+      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      const h = Math.floor(uptime / 3600).toString().padStart(2, '0');
+      const m = Math.floor((uptime % 3600) / 60).toString().padStart(2, '0');
+      const s = (uptime % 60).toString().padStart(2, '0');
+      const uptimeEl = document.getElementById('uptime-val');
+      if (uptimeEl) uptimeEl.textContent = `${h}:${m}:${s}`;
+      
+      if (Math.random() > 0.8) {
+        const latencyEl = document.getElementById('latency-val');
+        if (latencyEl) latencyEl.textContent = `${Math.floor(Math.random() * 20) + 15}ms`;
+      }
+    }, 1000);
+  }
+
+  // Initial Load & Astro View Transitions
+  initTerminal();
+  document.addEventListener('astro:after-swap', initTerminal);
+</script>

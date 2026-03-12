@@ -75,4 +75,25 @@ const shelf = defineCollection({
     }),
 });
 
-export const collections = { blog, workshop, atlas, shelf };
+const resume = defineCollection({
+  loader: glob({ pattern: "resume.md", base: "./src/data" }),
+  schema: () =>
+    z.object({
+      name: z.string(),
+      role: z.string(),
+      location: z.string(),
+      email: z.string(),
+      github: z.string(),
+      socials: z.array(z.object({ name: z.string(), href: z.string() })),
+      core_competencies: z.array(z.string()),
+      work_experience: z.array(z.object({
+        company: z.string(),
+        role: z.string(),
+        duration: z.string(),
+        description: z.string(),
+        points: z.array(z.string()).default([])
+      }))
+    }),
+});
+
+export const collections = { blog, workshop, atlas, shelf, resume };

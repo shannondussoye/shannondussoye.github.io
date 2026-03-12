@@ -29,7 +29,7 @@ const menuLinks = [
   { name: "Posts", href: "/posts", index: "01" },
   { name: "Shelf", href: "/shelf", index: "02" },
   { name: "Atlas", href: "/atlas", index: "03" },
-  { name: "About", href: "/about", index: "04" },
+  { name: "Terminal", href: "/terminal", index: "04" },
 ];
 ---
 
@@ -86,9 +86,10 @@ const menuLinks = [
             Posts
           </a>
         </li>
+
         <li>
-          <a href="/about" class:list={["hover:text-accent transition-colors", { "text-accent": isActive("/about") }]}>
-            About
+          <a href="/terminal" class:list={["hover:text-accent transition-colors", { "text-accent": isActive("/terminal") }]}>
+            Terminal
           </a>
         </li>
 
