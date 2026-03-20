@@ -8,10 +8,7 @@ import { getExternalShelfItems } from "@/utils/getExternalShelfItems";
 
 // 1. Fetch Local Items
 const localShelfEntries = await getCollection("shelf", ({ data }) => !data.draft);
-const localItems = localShelfEntries.map(entry => ({
-  id: entry.id,
-  ...entry.data
-}));
+const localItems = localShelfEntries.map(entry => entry.data);
 
 // 2. Fetch External (Raindrop) Items
 const externalItems = await getExternalShelfItems();
