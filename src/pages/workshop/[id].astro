@@ -1,10 +1,20 @@
 ---
-export function getStaticPaths() {
-  return [
-    { params: { id: "draft" } }, // Dummy path to satisfy Astro's requirement
-  ];
+import { type CollectionEntry, getCollection, render } from "astro:content";
+import WorkshopDetails from "@/layouts/WorkshopDetails.astro";
+
+type Props = {
+  item: CollectionEntry<"workshop">;
+};
+
+export async function getStaticPaths() {
+  const workshopItems = await getCollection("workshop", ({ data }) => !data.draft);
+  return workshopItems.map(item => ({
+    params: { id: item.id },
+    props: { item },
+  }));
 }
+
+const { item } = Astro.props;
 ---
-<script is:inline>
-  window.location.replace("/workshop");
-</script>
+
+<WorkshopDetails item={item} />

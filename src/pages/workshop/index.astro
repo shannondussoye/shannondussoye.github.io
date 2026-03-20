@@ -1,10 +1,15 @@
 ---
+import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import LinkButton from "@/components/LinkButton.astro";
 import { SITE } from "@/config";
 import IconSparkles from "@/assets/icons/IconSparkles.svg";
+
+const workshopItems = await getCollection("workshop", ({ data }) => !data.draft);
+const sortedItems = workshopItems.sort(
+  (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
+);
 
 const title = "Workshop";
 ---
@@ -12,41 +17,90 @@ const title = "Workshop";
 <Layout title={`${title} | ${SITE.title}`}>
   <Header />
 
-  <main
-    id="main-content"
-    class="app-layout flex flex-1 items-center justify-center min-h-[60vh]"
-  >
-    <div class="flex flex-col items-center justify-center text-center px-4">
-      <div class="w-16 h-16 rounded-3xl bg-accent/10 flex items-center justify-center mb-8 animate-pulse">
-        <IconSparkles class="w-8 h-8 text-accent" />
-      </div>
-      
-      <h1 class="text-4xl sm:text-5xl font-bold text-main mb-4 tracking-tight">
-        The {title}
-      </h1>
-      
-      <p class="text-dim/80 text-lg max-w-md mb-10 leading-relaxed">
-        My experimental projects, tools, and technical prototypes are currently being reorganized for a better experience.
-      </p>
-
-      <div class="flex flex-col sm:flex-row gap-4">
-        <LinkButton
-          href="/"
-          class="px-8 py-3 rounded-2xl bg-accent text-white font-bold hover:scale-105 transition-transform"
-        >
-          Return Home
-        </LinkButton>
-        <LinkButton
-          href="/posts"
-          class="px-8 py-3 rounded-2xl bg-border/20 text-main font-bold hover:bg-border/40 transition-all border border-border/50"
-        >
-          Read Blog
-        </LinkButton>
+  <main id="main-content" class="app-layout flex-1 pt-12 pb-32">
+    <div class="px-4 max-w-7xl mx-auto">
+      <!-- Header Section -->
+      <div class="mb-20 text-center">
+        <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-accent/10 mb-6 group hover:scale-110 transition-transform cursor-pointer">
+          <IconSparkles class="w-6 h-6 text-accent group-hover:rotate-12 transition-transform" />
+        </div>
+        <h1 class="text-4xl sm:text-6xl font-black text-main tracking-tighter uppercase italic mb-4">
+          The {title}
+        </h1>
+        <p class="text-dim/80 text-lg max-w-xl mx-auto leading-relaxed">
+          Experimental projects, curated gear, and technical prototypes built with focus and intent.
+        </p>
       </div>
 
-      <div class="mt-16 pt-8 border-t border-border/50 w-full max-w-sm">
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-dim/40 italic">
-          Building in public, slowly...
+      <!-- Bento Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 grid-rows-auto gap-6 sm:gap-8 min-h-[600px]">
+        {sortedItems.map((item, index) => {
+          // Differing spans for bento effect
+          const spanClass = index % 3 === 0 
+            ? "md:col-span-2 md:row-span-2" 
+            : "md:col-span-2 md:row-span-1";
+          
+          return (
+            <a 
+              href={`/workshop/${item.id}`}
+              class={`group relative overflow-hidden rounded-[2.5rem] border border-border/50 bg-muted/30 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:shadow-accent/10 hover:-translate-y-1 ${spanClass}`}
+            >
+              <!-- Hero Image -->
+              <div class="absolute inset-0 z-0">
+                <img 
+                  src={item.data.heroImage} 
+                  alt={item.data.title}
+                  class="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-40 group-hover:opacity-60"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+              </div>
+
+              <!-- Content Overlay -->
+              <div class="relative z-10 flex h-full flex-col justify-end p-8 sm:p-10">
+                <div class="space-y-4">
+                  <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-full bg-accent text-white text-[10px] font-black uppercase tracking-widest">
+                      {item.data.category || 'Tool'}
+                    </span>
+                    <span class="text-[10px] font-mono text-dim uppercase tracking-widest">
+                      {new Date(item.data.pubDatetime).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  
+                  <h2 class="text-3xl sm:text-4xl font-black text-main tracking-tighter uppercase italic group-hover:text-accent transition-colors leading-none">
+                    {item.data.title}
+                  </h2>
+                  
+                  <p class="text-dim/80 text-sm sm:text-base leading-relaxed max-w-sm line-clamp-2">
+                    {item.data.description}
+                  </p>
+
+                  <div class="flex flex-wrap gap-2 pt-2">
+                    {item.data.tags?.map(tag => (
+                      <span class="text-[9px] font-mono p-1 px-2 rounded-lg bg-border/20 text-dim border border-border/50 uppercase tracking-tighter">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <!-- Hover Decorative Element -->
+                <div class="absolute top-8 right-8 h-10 w-10 rounded-full bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 17L17 7"/>
+                    <path d="M7 7h10v10"/>
+                  </svg>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+
+      <!-- Footer Callout -->
+      <div class="mt-20 text-center">
+        <p class="text-[11px] font-black uppercase tracking-[0.3em] text-accent/60 animate-pulse italic">
+          More artifacts being processed...
         </p>
       </div>
     </div>
@@ -54,3 +108,11 @@ const title = "Workshop";
 
   <Footer />
 </Layout>
+
+<style>
+  /* Custom glass effect for bento cards */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+</style>

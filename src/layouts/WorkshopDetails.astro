@@ -1,0 +1,79 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Datetime from "@/components/Datetime.astro";
+import BackButton from "@/components/BackButton.astro";
+import { SITE } from "@/config";
+
+type Props = {
+  item: CollectionEntry<"workshop">;
+};
+
+const { item } = Astro.props;
+const { title, description, pubDatetime, heroImage, category, tags } = item.data;
+
+const { Content } = await render(item);
+
+const layoutProps = {
+  title: `${title} | Workshop | ${SITE.title}`,
+  description,
+  pubDatetime,
+  ogImage: heroImage,
+  scrollSmooth: true,
+};
+---
+
+<Layout {...layoutProps}>
+  <Header />
+  <div class="app-layout">
+    <BackButton />
+  </div>
+
+  <main id="main-content" class="app-layout pb-32">
+    <!-- Hero Section -->
+    <div class="relative w-full aspect-[21/9] rounded-[2.5rem] overflow-hidden mb-12 border border-border/50 group">
+      <img 
+        src={heroImage} 
+        alt={title}
+        class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
+      />
+      <div class="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent"></div>
+      
+      <div class="absolute bottom-8 left-8 sm:bottom-12 sm:left-12 max-w-2xl">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="px-3 py-1 rounded-full bg-accent text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-accent/20">
+            {category || 'Tool'}
+          </span>
+          <Datetime pubDatetime={pubDatetime} size="sm" class="text-white/80" />
+        </div>
+        <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tighter uppercase italic leading-none mb-4 drop-shadow-2xl">
+          {title}
+        </h1>
+        <p class="text-white/80 text-lg font-medium max-w-lg leading-relaxed drop-shadow-lg">
+          {description}
+        </p>
+      </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+      <!-- Article Content -->
+      <article id="article" class="app-prose w-full max-w-none">
+        <Content />
+      </article>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .gradient-accent {
+    background: linear-gradient(135deg, var(--accent) 0%, #ff8c42 100%);
+  }
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+</style>
