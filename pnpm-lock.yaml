@@ -51,7 +51,7 @@ importers:
         specifier: ^4.1.18
         version: 4.1.18
       three:
-        specifier: ^0.160.0
+        specifier: ^0.160.1
         version: 0.160.1
     devDependencies:
       '@astrojs/check':
