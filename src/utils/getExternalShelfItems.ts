@@ -1,6 +1,4 @@
-import { XMLParser } from "fast-xml-parser";
-
-const RAINDROP_SHELF_RSS_URL = import.meta.env.PUBLIC_RAINDROP_SHELF_RSS_URL || "https://bg.raindrop.io/rss/public/68672269";
+const RAINDROP_API_URL = "https://api.raindrop.io/rest/v1/raindrops/68672269";
 
 export interface ShelfItem {
   id: string;
@@ -52,48 +50,52 @@ function inferType(url: string, tags: string[] = []): "movie" | "book" | "tv" | 
 
 export async function getExternalShelfItems(): Promise<ShelfItem[]> {
   try {
-    const response = await fetch(RAINDROP_SHELF_RSS_URL);
-    if (!response.ok) return [];
+    const token = (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.RAINDROP_TEST_TOKEN : undefined) || process.env.RAINDROP_TEST_TOKEN;
+    if (!token) {
+        console.warn("RAINDROP_TEST_TOKEN is not set. Cannot fetch external shelf items.");
+        return [];
+    }
 
-    const xmlData = await response.text();
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "@_"
+    const response = await fetch(RAINDROP_API_URL, {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
     });
-    const jsonObj = parser.parse(xmlData);
-    const items = jsonObj.rss?.channel?.item;
 
-    if (!items) return [];
-    const itemsList = Array.isArray(items) ? items : [items];
+    if (!response.ok) {
+        console.error(`Error fetching from Raindrop API: ${response.statusText}`);
+        return [];
+    }
 
-    return itemsList.map((item: any) => {
-      const link = item.link;
-      
-      // 1. More robust tag extraction
-      let rawTags = item.category ? (Array.isArray(item.category) ? item.category : [item.category]) : [];
-      const tags = rawTags.map((t: any) => (typeof t === 'string' ? t : t["#text"] || "").toLowerCase().trim());
+    const data = await response.json();
+    const items = data.items || [];
+
+    return items.map((item: any) => {
+      const link = item.link || "";
+      const rawTags = item.tags || [];
+      const tags = rawTags.map((t: string) => t.toLowerCase().trim());
       
       const type = inferType(link, tags);
       
-      const rawDescription = item.description || "";
+      const rawDescription = item.excerpt || item.note || "";
       
-      // 1. Extract Image from <img> tag in description
-      const imgMatch = rawDescription.match(/<img[^>]+src="([^"]+)"/i);
-      const extractedImage = imgMatch ? imgMatch[1] : "";
-
-      // 2. Clean description (remove HTML and the image tag)
+      // Clean description
       let description = rawDescription.replace(/<[^>]*>/g, '').trim();
       if (description.length > 300) description = description.substring(0, 300) + "...";
 
+      // Parse title loosely
+      let title = item.title || "";
+      title = title.split(/ [|—-] /)[0].replace(/\s*\(.*\)\s*$/, "").trim();
+
       return {
-        id: `external-${Buffer.from(link).toString('base64').substring(0, 10)}`,
-        title: item.title.split(/ [|—-] /)[0].replace(/\s*\(.*\)\s*$/, "").trim(),
+        id: `external-${item._id}`,
+        title: title || "Unknown",
         type: type,
         category: type.charAt(0).toUpperCase() + type.slice(1),
-        pubDatetime: new Date(item.pubDate),
+        pubDatetime: new Date(item.created),
         author: "Raindrop", 
         description: description || "Curated via Raindrop.",
-        image: extractedImage || item["media:content"]?.["@_url"] || item.enclosure?.["@_url"] || "", 
+        image: item.cover || "", 
         rating: 5, 
         color: getRandomColor(),
         link: link

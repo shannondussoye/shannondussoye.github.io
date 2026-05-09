@@ -1,0 +1,53 @@
+<canvas id="matrix-canvas" class="hidden absolute inset-0 pointer-events-none z-1 rounded-2xl"></canvas>
+
+<style>
+  #matrix-canvas {
+    opacity: 0.15;
+  }
+</style>
+
+<script>
+  window.initMatrix = () => {
+    const canvas = document.getElementById('matrix-canvas') as HTMLCanvasElement;
+    if (!canvas) return null;
+    
+    canvas.classList.remove('hidden');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    const resize = () => {
+      canvas.width = canvas.parentElement?.offsetWidth || window.innerWidth;
+      canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight;
+    };
+    
+    resize();
+    window.addEventListener('resize', resize);
+    
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"\'#&_(),.;:?!\\|{}<>[]^~";
+    const fontSize = 14;
+    let columns = canvas.width / fontSize;
+    let drops = Array.from({ length: Math.ceil(columns) }).fill(1) as number[];
+    
+    const interval = setInterval(() => {
+      ctx.fillStyle = "rgba(13, 14, 18, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#ff6b01";
+      ctx.fillStyle = accentColor;
+      ctx.font = fontSize + "px monospace";
+      
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }, 33);
+    
+    return () => {
+      clearInterval(interval);
+      canvas.classList.add('hidden');
+      window.removeEventListener('resize', resize);
+    };
+  };
+</script>

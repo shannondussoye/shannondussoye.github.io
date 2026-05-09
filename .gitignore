@@ -1,5 +1,6 @@
 # build output
 dist/
+TODO.md
 
 # generated types
 .astro/

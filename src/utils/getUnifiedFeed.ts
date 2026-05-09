@@ -4,7 +4,6 @@ import { XMLParser } from "fast-xml-parser";
 const BLUESKY_HANDLE = import.meta.env.PUBLIC_BLUESKY_HANDLE || "anotherrealshannon.bsky.social";
 const SUBSTACK_URL = import.meta.env.PUBLIC_SUBSTACK_URL || "https://shannon205107.substack.com/feed";
 const HN_USERNAME = import.meta.env.PUBLIC_HN_USERNAME || "notrealrootuser";
-const RAINDROP_RSS_URL = import.meta.env.PUBLIC_RAINDROP_RSS_URL || "https://bg.raindrop.io/rss/public/66293279";
 const GITHUB_USERNAME = "shannondussoye";
 
 export interface ActivityItem {
@@ -116,23 +115,22 @@ export async function getUnifiedFeed(limit = 25): Promise<ActivityItem[]> {
 
   // 4. RAINDROP
   try {
-    const rdResponse = await fetch(RAINDROP_RSS_URL);
-    if (rdResponse.ok) {
-      const xmlData = await rdResponse.text();
-      const parser = new XMLParser();
-      const jsonObj = parser.parse(xmlData);
-      const items = jsonObj.rss?.channel?.item;
-      if (items) {
-        const itemsList = Array.isArray(items) ? items : [items];
-        const rdItems = itemsList.slice(0, 15).map((item: any) => ({
+    const token = (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.RAINDROP_TEST_TOKEN : undefined) || process.env.RAINDROP_TEST_TOKEN;
+    if (token) {
+      const rdResponse = await fetch(`https://api.raindrop.io/rest/v1/raindrops/66293279`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (rdResponse.ok) {
+        const data = await rdResponse.json();
+        const rdItems = (data.items || []).slice(0, 15).map((item: any) => ({
           type: "raindrop",
           platform: "Reading",
           category: "reading",
           label: "Bookmark",
           title: item.title,
-          recommendation: item.description ? item.description.replace(/<[^>]*>/g, '').substring(0, 160) + '...' : "",
-          date: new Date(item.pubDate).getTime(),
-          displayDate: new Date(item.pubDate).toLocaleDateString(undefined, {
+          recommendation: (item.excerpt || item.note || "").substring(0, 160) + '...',
+          date: new Date(item.created).getTime(),
+          displayDate: new Date(item.created).toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric'
           }),

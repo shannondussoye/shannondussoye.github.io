@@ -1,0 +1,35 @@
+---
+interface Props {
+  className?: string;
+}
+
+const { className = "" } = Astro.props;
+---
+
+<div class={`w-full mb-4 flex-none grid grid-cols-2 sm:grid-cols-4 gap-4 px-2 opacity-60 ${className}`}>
+  <div class="border-l-2 border-accent pl-2">
+    <div class="text-[9px] font-black uppercase tracking-widest text-dim">Connection</div>
+    <div class="text-[11px] font-mono text-main">SHANNON-TERMINAL-01</div>
+  </div>
+  <div class="border-l-2 border-accent/30 pl-2">
+    <div class="text-[9px] font-black uppercase tracking-widest text-dim">Status</div>
+    <div class="flex items-center gap-1.5 text-[11px] font-mono text-main">
+      <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+      ENCRYPTED
+    </div>
+  </div>
+  <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
+    <div class="text-[9px] font-black uppercase tracking-widest text-dim">Latency</div>
+    <div class="text-[11px] font-mono text-main" id="latency-val">24ms</div>
+  </div>
+  <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
+    <div class="text-[9px] font-black uppercase tracking-widest text-dim">Uptime</div>
+    <div class="text-[11px] font-mono text-main" id="uptime-val">00:00:00</div>
+  </div>
+</div>
+
+<style>
+  .text-dim { color: var(--term-dim); }
+  .text-main { color: var(--term-text); }
+  .border-accent { border-color: var(--accent); }
+</style>

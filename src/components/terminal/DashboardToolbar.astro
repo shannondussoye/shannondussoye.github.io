@@ -1,0 +1,62 @@
+---
+const quickAccess = [
+  { cmd: 'resume', desc: 'Summary' },
+  { cmd: 'skills', desc: 'Stack' },
+  { cmd: 'experience', desc: 'Work' },
+  { cmd: 'pulse', desc: 'Live' },
+  { cmd: 'matrix', desc: 'Glitch' }
+];
+
+const shortcuts = [
+  { key: 'TAB', action: 'Auto-fill' },
+  { key: '↑ / ↓', action: 'History' },
+  { key: 'CTR+L', action: 'Clear' }
+];
+---
+
+<div class="w-full flex-none grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 relative z-0">
+  <!-- Command Quick Links -->
+  <div class="md:col-span-3 glassmorphism border border-border/50 p-4 rounded-2xl">
+    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4 flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+      Quick Access
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {quickAccess.map(item => (
+        <div 
+          class="group cursor-pointer flex flex-col p-2 rounded-xl hover:bg-accent/5 transition-all border border-transparent hover:border-accent/20"
+          onclick={`document.getElementById('terminal-input').value='${item.cmd}'; document.getElementById('terminal-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))`}
+        >
+          <div class="text-xs font-mono term-main group-hover:text-accent transition-colors flex justify-between items-baseline">
+            <span>{item.cmd}</span>
+            <span class="text-[8px] opacity-0 group-hover:opacity-40 transition-opacity italic">↵</span>
+          </div>
+          <div class="text-[9px] term-dim uppercase tracking-tighter mt-1">{item.desc}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Shortcuts Pad -->
+  <div class="glassmorphism border border-border/50 p-4 rounded-2xl flex flex-col justify-center">
+    <div class="text-[10px] font-black uppercase tracking-[0.2em] term-dim mb-3 text-center">System Shortcuts</div>
+    <div class="grid grid-cols-2 gap-y-2 text-[10px] font-mono">
+      {shortcuts.map(s => (
+        <>
+          <div class="term-dim/60 font-bold">{s.key}</div>
+          <div class="term-main/80 text-right">{s.action}</div>
+        </>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .glassmorphism {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+  .term-main { color: var(--term-text); }
+  .term-dim { color: var(--term-dim); }
+  .text-accent { color: var(--accent); }
+</style>

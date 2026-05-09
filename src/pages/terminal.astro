@@ -1,12 +1,16 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-// @ts-ignore
 import Footer from "@/components/Footer.astro";
 import { SITE } from "@/config";
+import { getCollection } from "astro:content";
+
+// Components
+import StatusBar from "@/components/terminal/StatusBar.astro";
+import TerminalWindow from "@/components/terminal/TerminalWindow.astro";
+import DashboardToolbar from "@/components/terminal/DashboardToolbar.astro";
 
 // 1. Fetch single source of truth from resume.md
-import { getCollection } from "astro:content";
 const resumeDocs = await getCollection("resume");
 const resumeEntry = resumeDocs[0];
 
@@ -32,28 +36,7 @@ const title = "shannon@terminal";
   <Header />
   <main id="main-content" class="app-layout terminal-page flex flex-col pt-2 pb-4 relative">
     
-    <!-- Decorative Status Bar -->
-    <div class="w-full mb-4 flex-none grid grid-cols-2 sm:grid-cols-4 gap-4 px-2 opacity-60">
-      <div class="border-l-2 border-accent pl-2">
-        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Connection</div>
-        <div class="text-[11px] font-mono text-main">SHANNON-TERMINAL-01</div>
-      </div>
-      <div class="border-l-2 border-accent/30 pl-2">
-        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Status</div>
-        <div class="flex items-center gap-1.5 text-[11px] font-mono text-main">
-          <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-          ENCRYPTED
-        </div>
-      </div>
-      <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
-        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Latency</div>
-        <div class="text-[11px] font-mono text-main" id="latency-val">24ms</div>
-      </div>
-      <div class="border-l-2 border-accent/30 pl-2 hidden sm:block">
-        <div class="text-[9px] font-black uppercase tracking-widest text-dim">Uptime</div>
-        <div class="text-[11px] font-mono text-main" id="uptime-val">00:00:00</div>
-      </div>
-    </div>
+    <StatusBar />
 
     <!-- Top Decorative Header -->
     <div class="w-full mb-4 flex-none flex items-baseline justify-between gap-4 border-b border-white/5 pb-6">
@@ -68,91 +51,14 @@ const title = "shannon@terminal";
       </div>
     </div>
 
-    <!-- Main Terminal Window Container -->
-    <div class="w-full flex-1 min-h-0 flex flex-col">
-      <div id="terminal-window" class="terminal-container shadow-2xl overflow-hidden glassmorphism border border-white/10 relative w-full min-h-[500px] sm:min-h-[650px] z-10">
-        <div class="terminal-header flex-none flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5 select-none">
-          <div class="flex gap-2">
-            <div class="w-3 h-3 rounded-full bg-[#ff5f57] cursor-pointer hover:opacity-80 transition-opacity"></div>
-            <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
-            <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
-          </div>
-          <div class="text-[10px] uppercase tracking-widest text-white/40 font-bold">shannon@portfolio — terminal</div>
-          <div class="w-12"></div>
-        </div>
-        
-        <div id="terminal-output" class="p-6 overflow-y-auto font-mono text-sm leading-relaxed custom-scrollbar relative z-10 scroll-smooth flex-1">
-          <div id="terminal-content"></div>
-          <div id="terminal-input-row" class="mt-2 flex items-center gap-2 op-0 pointer-events-none transition-opacity duration-300">
-            <span class="prompt-text whitespace-nowrap" id="terminal-prompt">
-              <span class="text-accent font-bold">shannon</span><span class="term-dim opacity-40">@</span><span class="text-blue-400">portfolio</span><span class="term-main opacity-60">:</span><span class="text-purple-400">~</span><span class="text-accent/80">$</span>
-            </span>
-            <input 
-              id="terminal-input" 
-              type="text" 
-              class="bg-transparent border-none outline-none term-main w-full font-mono caret-accent" 
-              autocomplete="off" 
-              spellcheck="false" 
-              autofocus
-            />
-          </div>
-        </div>
-        <div id="scroll-progress" class="no-print"></div>
+    <!-- Main Terminal Window -->
+    <TerminalWindow>
+      <Fragment slot="prompt">
+        <span class="text-accent font-bold">shannon</span><span class="term-dim opacity-40">@</span><span class="text-blue-400">portfolio</span><span class="term-main opacity-60">:</span><span class="text-purple-400">~</span><span class="text-accent/80">$</span>
+      </Fragment>
+    </TerminalWindow>
 
-        <div id="autocomplete-popup" class="hidden absolute bottom-20 left-6 right-6 bg-background/90 backdrop-blur-md border border-border rounded-xl overflow-hidden z-30 shadow-2xl">
-          <!-- Autocomplete items -->
-        </div>
-
-        <canvas id="matrix-canvas" class="hidden absolute inset-0 pointer-events-none z-1 rounded-2xl"></canvas>
-        
-        <!-- CRT Overlay Effects -->
-        <div class="crt-overlay pointer-events-none absolute inset-0 z-20 overflow-hidden opacity-5 underline-none">
-          <div class="scanlines"></div>
-          <div class="flicker"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Dashboard Toolbar -->
-    <div class="w-full flex-none grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 relative z-0">
-      <!-- Command Quick Links -->
-      <div class="md:col-span-3 glassmorphism border border-border/50 p-4 rounded-2xl">
-        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-accent mb-4 flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-          Quick Access
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[
-            { cmd: 'resume', desc: 'Summary' },
-            { cmd: 'skills', desc: 'Stack' },
-            { cmd: 'experience', desc: 'Work' },
-            { cmd: 'pulse', desc: 'Live' },
-            { cmd: 'matrix', desc: 'Glitch' }
-          ].map(item => (
-            <div 
-              class="group cursor-pointer flex flex-col p-2 rounded-xl hover:bg-accent/5 transition-all border border-transparent hover:border-accent/20"
-              onclick={`document.getElementById('terminal-input').value='${item.cmd}'; document.getElementById('terminal-input').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}))`}
-            >
-              <div class="text-xs font-mono term-main group-hover:text-accent transition-colors flex justify-between items-baseline">
-                <span>{item.cmd}</span>
-                <span class="text-[8px] opacity-0 group-hover:opacity-40 transition-opacity italic">↵</span>
-              </div>
-              <div class="text-[9px] term-dim uppercase tracking-tighter mt-1">{item.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <!-- Shortcuts Pad -->
-      <div class="glassmorphism border border-border/50 p-4 rounded-2xl flex flex-col justify-center">
-        <div class="text-[10px] font-black uppercase tracking-[0.2em] term-dim mb-3 text-center">System Shortcuts</div>
-        <div class="grid grid-cols-2 gap-y-2 text-[10px] font-mono">
-          <div class="term-dim/60 font-bold">TAB</div><div class="term-main/80 text-right">Auto-fill</div>
-          <div class="term-dim/60 font-bold">↑ / ↓</div><div class="term-main/80 text-right">History</div>
-          <div class="term-dim/60 font-bold">CTR+L</div><div class="term-main/80 text-right">Clear</div>
-        </div>
-      </div>
-    </div>
+    <DashboardToolbar />
 
   </main>
   <Footer />
@@ -183,105 +89,12 @@ const title = "shannon@terminal";
     background-position: center top;
   }
 
-  .terminal-container {
-    width: 100%;
-    flex: 1; /* Grow to fill viewport gap */
-    background: var(--term-bg);
-    border-radius: 1.25rem;
-    border: 1px solid var(--term-border);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--term-text);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    overflow-x: hidden;
-  }
-
-  /* Dark mode specific terminal adjustment */
-  :global([data-theme="dark"]) .terminal-container {
-    border-color: color-mix(in srgb, var(--accent), transparent 60%);
-    box-shadow: 0 0 40px color-mix(in srgb, var(--accent), transparent 90%);
-  }
-
-  .glassmorphism {
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-  }
-
   .text-accent {
     color: var(--accent);
   }
 
   .term-main { color: var(--term-text); }
   .term-dim { color: var(--term-dim); }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--accent), transparent 70%);
-    border-radius: 10px;
-    border: 1px solid transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
-  }
-
-  /* Reading Progress Line */
-  #scroll-progress {
-    position: absolute;
-    left: 0;
-    top: 44px; /* Just below the terminal header */
-    width: 100%;
-    height: 2px;
-    background: var(--accent);
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.1s linear, opacity 0.3s ease;
-    z-index: 50;
-    box-shadow: 0 0 8px var(--accent);
-  }
-
-  /* CRT Effects */
-  .crt-overlay {
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-    background-size: 100% 2px, 3px 100%;
-  }
-
-  .scanlines {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, .1) 51%);
-    background-size: 100% 4px;
-    animation: scanlines 0.2s linear infinite;
-  }
-
-  @keyframes scanlines {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(4px); }
-  }
-
-  .flicker {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(18, 16, 16, 0.03);
-    animation: flicker 0.1s infinite;
-  }
-
-  @keyframes flicker {
-    0% { opacity: 0.1; }
-    50% { opacity: 0.2; }
-    100% { opacity: 0.1; }
-  }
-
-  .op-0 { opacity: 0; }
-  .op-1 { opacity: 1; }
 
   /* Animation for lines */
   .terminal-line {
@@ -348,6 +161,10 @@ const title = "shannon@terminal";
 
   @keyframes fillBar {
     from { width: 0; }
+  }
+  @keyframes fill {
+    from { width: 0; }
+    to { width: 100%; }
   }
   .animate-fill {
     animation: fillBar 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -434,7 +251,7 @@ const title = "shannon@terminal";
     input.addEventListener('keydown', handleInput);
     popup.addEventListener('click', handlePopupClick);
     
-    // Focus management that doesn't jump on interactive clicks
+    // Improved focus management
     const focusListener = (e) => {
       const target = e.target;
       if (target && typeof target.closest === 'function') {
@@ -447,15 +264,15 @@ const title = "shannon@terminal";
       }
     };
     
-    // Use a named function for easier cleanup/management
-    document.removeEventListener('click', focusListener); // Safety
+    document.removeEventListener('click', focusListener);
     document.addEventListener('click', focusListener);
     
-    // Add scroll tracking once
-    output.removeEventListener('scroll', handleScrollUpdate); // Safety
+    // Scroll progress tracking
+    output.removeEventListener('scroll', handleScrollUpdate);
     output.addEventListener('scroll', handleScrollUpdate);
     
-    const closeBtn = document.querySelector('.bg-\\[\\#ff5f57\\]');
+    // Component-based window controls
+    const closeBtn = document.getElementById('close-terminal');
     if (closeBtn) {
       closeBtn.onclick = () => COMMANDS.exit.fn();
     }
@@ -548,6 +365,24 @@ const title = "shannon@terminal";
       btn.innerHTML = '<span class="text-accent/60 ring-1 ring-accent/20 px-2 py-0.5 rounded text-[10px] items-center gap-1 group/btn ml-1 hover:bg-accent/10 transition-colors inline-flex"><span class="w-1 h-1 rounded-full bg-accent/40"></span> SHOW DETAILS</span>';
     }
   };
+
+  // Cipher Effect for Enigma Uplink
+  function cipherEffect(targetEl, text, speed = 30) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&@$*+<>?/";
+    let iteration = 0;
+    const interval = setInterval(() => {
+      targetEl.innerText = text
+        .split("")
+        .map((char, index) => {
+          if (index < iteration) return text[index];
+          return chars[Math.floor(Math.random() * chars.length)];
+        })
+        .join("");
+
+      if (iteration >= text.length) clearInterval(interval);
+      iteration += 1 / 3;
+    }, speed);
+  }
 
   // Commands
   const COMMANDS = {
@@ -877,8 +712,11 @@ const title = "shannon@terminal";
         const canvas = document.getElementById('matrix-canvas');
         canvas.classList.remove('hidden');
         const ctx = canvas.getContext('2d');
-        canvas.width = canvas.parentElement.offsetWidth;
-        canvas.height = canvas.parentElement.offsetHeight;
+        
+        // Use parent element dimensions
+        const container = canvas.parentElement;
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
         
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"\'#&_(),.;:?!\\|{}<>[]^~";
         const fontSize = 14;
@@ -904,17 +742,12 @@ const title = "shannon@terminal";
         addLine('Press any key to exit.', 'term-dim opacity-60');
         
         const stopMatrix = (e) => {
-          // Prevent the Enter key that started the command from immediately stopping it
           if (e.key === 'Enter') return;
-          
           clearInterval(interval);
           canvas.classList.add('hidden');
           window.removeEventListener('keydown', stopMatrix);
         };
-        // Use a small timeout to ensure the Enter key event has finished bubbling
-        setTimeout(() => {
-          window.addEventListener('keydown', stopMatrix);
-        }, 100);
+        setTimeout(() => window.addEventListener('keydown', stopMatrix), 100);
       }
     },
     pulse: {
@@ -942,15 +775,19 @@ const title = "shannon@terminal";
         addLine('Source: Unified activity aggregator', 'term-dim');
       }
     },
-    /* contact: {
-      desc: "Send a secure message",
-      fn: () => {
-        addLine('<span class="text-accent font-bold">// SECURE MESSAGING ENCRYPTED</span>', 'mb-2');
-        addLine('Please provide your details below.', 'term-dim opacity-60 mb-4');
+    contact: {
+      desc: "Secure Enigma Uplink",
+      fn: async () => {
+        addLine('<span class="text-accent font-bold">// INITIALIZING SECURE UPLINK PROTOCOL...</span>', 'mb-2');
+        await new Promise(r => setTimeout(r, 600));
+        addLine('<span class="term-dim">[SYSTEM]: Handshake successful. Layer 3 Encryption Active.</span>', 'text-[10px] italic mb-4');
+        await new Promise(r => setTimeout(r, 400));
+        
         contactState = 'name';
-        setPrompt('<span class="text-accent font-mono font-bold">Name > </span>');
+        const promptDiv = addLine('<span class="text-accent font-bold">IDENTIFY: </span><span id="contact-prompt-val"></span>', 'mb-2');
+        inputRow.querySelector('#terminal-prompt').innerHTML = '<span class="text-accent font-mono font-bold">Name > </span>';
       }
-    }, */
+    },
     sudo: {
       hidden: true,
       desc: "Superuser access",
@@ -966,44 +803,53 @@ const title = "shannon@terminal";
     }
   };
 
+  const contactData = { name: '', email: '', message: '' };
+
   function handleCommand(raw) {
     const trimmed = raw.trim();
     if (!trimmed && !contactState) return;
 
-    // Contact State Machine Handling
-    /* if (contactState) {
+    if (contactState) {
       if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'quit') {
-        addLine('Messaging aborted.', 'term-dim opacity-40 mt-1');
+        addLine('Uplink terminated by user.', 'text-red-400/60 text-[10px] mt-1');
         contactState = null;
-        contactData = { name: '', email: '', message: '' };
-        setPrompt(DEFAULT_PROMPT);
+        inputRow.querySelector('#terminal-prompt').innerHTML = '<span class="text-accent/80">$</span>';
         return;
       }
 
-      addLine(trimmed, 'term-main font-bold mb-2');
+      const currentPromptText = inputRow.querySelector('#terminal-prompt').innerText.replace(' >', '');
+      const lastLine = output.querySelector('#terminal-content').lastElementChild;
       
       if (contactState === 'name') {
         contactData.name = trimmed;
+        cipherEffect(lastLine.querySelector('#contact-prompt-val'), trimmed);
         contactState = 'email';
-        setPrompt('<span class="text-accent font-mono font-bold">Email > </span>');
+        addLine('<span class="text-accent font-bold">COMM_CHANNEL: </span><span id="contact-prompt-val"></span>', 'mb-2');
+        inputRow.querySelector('#terminal-prompt').innerHTML = '<span class="text-accent font-mono font-bold">Email > </span>';
       } else if (contactState === 'email') {
         contactData.email = trimmed;
+        cipherEffect(lastLine.querySelector('#contact-prompt-val'), trimmed);
         contactState = 'message';
-        setPrompt('<span class="text-accent font-mono font-bold">Message > </span>');
+        addLine('<span class="text-accent font-bold">PAYLOAD: </span><span id="contact-prompt-val"></span>', 'mb-2');
+        inputRow.querySelector('#terminal-prompt').innerHTML = '<span class="text-accent font-mono font-bold">Message > </span>';
       } else if (contactState === 'message') {
         contactData.message = trimmed;
-        addLine('Sending message...', 'text-accent mt-2');
-        setPrompt(DEFAULT_PROMPT);
+        cipherEffect(lastLine.querySelector('#contact-prompt-val'), trimmed);
         
+        addLine('<span class="text-accent animate-pulse font-bold mt-4">UPLINKING DATA...</span>', 'mb-1');
+        addLine('<div class="w-48 h-1 bg-white/5 rounded-full overflow-hidden mt-1 mb-4"><div class="h-full bg-accent animate-[fill_1.5s_ease-in-out_forwards]"></div></div>');
+        
+        inputRow.querySelector('#terminal-prompt').innerHTML = '<span class="text-accent/80">$</span>';
+        contactState = null;
+
         setTimeout(() => {
-          addLine('<span class="text-green-400 font-bold">✓ Message encrypted and sent successfully.</span>', 'mt-1 mb-4');
-          addLine(`[SESSION LOG]: Message from ${contactData.name} (${contactData.email}) queued for delivery.`, 'term-dim italic opacity-40 text-[10px]');
-          contactState = null;
-          contactData = { name: '', email: '', message: '' };
-        }, 1500);
+          addLine('<span class="text-green-400 font-bold">✓ DATA PACKET DELIVERED.</span>', 'mt-1');
+          addLine(`<span class="term-dim text-[10px] italic">Hash: ${Math.random().toString(16).substring(2, 12).toUpperCase()} // END_TRANSMISSION</span>`, 'mb-4');
+          contactData.name = ''; contactData.email = ''; contactData.message = '';
+        }, 2000);
       }
       return;
-    } */
+    }
     
     if (!trimmed) return;
     
