@@ -30,6 +30,8 @@ jobs:
         uses: withastro/action@v5
         with:
           package-manager: pnpm@9
+        env:
+          RAINDROP_TEST_TOKEN: ${{ secrets.RAINDROP_TEST_TOKEN }}
 
   deploy:
     needs: build
